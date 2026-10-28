@@ -1,0 +1,19 @@
+{
+ "center": "10-27",
+ "halfWidthDays": 15,
+ "years": [
+  1991,
+  2020
+ ],
+ "quantile": 0.99,
+ "floorMm": 10.0,
+ "samplesPerCell": 3870,
+ "grid": {
+  "nlat": 181,
+  "nlon": 360,
+  "lat0": 90,
+  "lon0": -180,
+  "d": 1
+ },
+ "source": "ERA5 hourly precipitation, 1 degree conservative regrid, ARCO-ERA5 (Google Cloud)"
+}

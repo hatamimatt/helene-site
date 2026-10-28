@@ -1,0 +1,82 @@
+# Refreshes the globe's 5-day outlook from the newest ECMWF ensemble run and publishes the site
+# to GitHub Pages. ENS 00 and 12 UTC runs are complete in open data about 8 hours later.
+# Every 10 days or so update.py also rebuilds data/climate/ (about 40 minutes) and commits it.
+name: Update outlook
+
+on:
+  schedule:
+    - cron: "40 8,20 * * *"
+  workflow_dispatch:
+    inputs:
+      force_climate:
+        description: Rebuild data/climate/ for today
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: outlook
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # past forecasts used for the model climate; reused when the season window moves
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache/model_climate
+          key: model-climate-${{ github.run_id }}
+          restore-keys: model-climate-
+
+      - id: update
+        run: python update.py ${{ inputs.force_climate && '--force-climate' || '' }}
+
+      - if: steps.update.outputs.climate_changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/model_climate
+          key: model-climate-${{ github.run_id }}
+
+      - if: steps.update.outputs.climate_changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/climate
+          git commit -m "Rebuild local climate for $(date -u +%m-%d)" && git pull --rebase && git push || echo "Nothing to commit"
+
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp index.html before_helene.html helene_viewer.html _site/
+          cp -r data _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

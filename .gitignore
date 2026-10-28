@@ -1,0 +1,8 @@
+.venv/
+.cache/
+.claude/
+__pycache__/
+.DS_Store
+# regenerated every 12 hours by .github/workflows/outlook.yml
+data/now/
+_site/

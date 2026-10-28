@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Before Helene</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<style>
+:root{
+  --paper:#EDF1F3; --panel:#F8FAFB; --ink:#13222D; --muted:#566670; --line:#C8D2D8;
+  --accent:#1B6A88; --mark:#AE2F66; --band:#1B6A88; --ec:#B85A16; --mapframe:#0A1B28;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1A23; --panel:#13222D; --ink:#DCE5EA; --muted:#93A4AE; --line:#263A4A;
+    --accent:#5FB6D4; --mark:#E46A9F; --band:#5FB6D4; --ec:#F0A35E; --mapframe:#081620; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1A23; --panel:#13222D; --ink:#DCE5EA; --muted:#93A4AE; --line:#263A4A;
+  --accent:#5FB6D4; --mark:#E46A9F; --band:#5FB6D4; --ec:#F0A35E; --mapframe:#081620; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 24px 56px}
+.crumbs{display:flex;gap:18px;font-size:.85rem;margin-bottom:22px}
+.crumbs a{text-decoration:none}
+header.intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,28rem);gap:8px 40px;align-items:end;margin-bottom:26px}
+h1{font:600 clamp(2.2rem,5vw,3.4rem)/1.03 var(--serif);letter-spacing:-.015em;margin:0}
+.dates{font:400 1.12rem/1.35 var(--serif);color:var(--muted);margin:6px 0 0}
+.lede{margin:0;max-width:34rem}
+h2{font:600 1.55rem/1.2 var(--serif);margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 16px;max-width:44rem}
+
+.explorer{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:20px;align-items:start}
+.map{position:relative;width:100%;background:var(--mapframe);border-radius:6px;overflow:hidden;cursor:crosshair}
+.map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.readout{position:absolute;left:10px;top:10px;padding:6px 9px;border-radius:4px;background:rgba(8,20,30,.78);color:#E6EEF2;font-size:.82rem;line-height:1.35;pointer-events:none;max-width:75%}
+.timeline{display:grid;grid-template-columns:auto minmax(0,1fr) 10rem;gap:14px;align-items:center;margin-top:12px}
+.play{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.play:hover{border-color:var(--accent)}
+.track{position:relative;padding-bottom:18px}
+.track input{width:100%;margin:0;accent-color:var(--accent);cursor:pointer}
+.ticks{position:absolute;left:0;right:0;bottom:0;height:16px;font-size:.72rem;color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.when{text-align:right;font-size:.9rem;line-height:1.3}
+.when strong{display:block}
+.when span{color:var(--muted)}
+.controls{display:flex;flex-direction:column;gap:16px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:600;font-size:.88rem;margin-bottom:6px;padding:0}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btns button,.modes button{font:500 .83rem/1.2 var(--sans);text-align:left;padding:8px 10px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btns button[aria-pressed="true"],.modes button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.modes button{text-align:center;padding:8px 4px}
+.opt{display:flex;gap:8px;align-items:center;font-size:.88rem;cursor:pointer}
+.opt input{accent-color:var(--accent);margin:0}
+.cb canvas{width:100%;height:12px;display:block;border-radius:2px}
+.cbname{font-size:.84rem;margin:0 0 6px}
+.cbticks{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+
+section.block{margin-top:44px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.ix{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 14px 8px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.ix:hover,.ix[aria-pressed="true"]{border-color:var(--accent)}
+.ix h3{font:600 .95rem/1.3 var(--sans);margin:0 0 2px}
+.ix .why{font-size:.8rem;color:var(--muted);margin:0 0 8px}
+.ix .stat{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font-size:.84rem;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.ix .stat b{font:600 1.15rem var(--sans)}
+.ix .rank{color:var(--mark);font-weight:600}
+.ix svg{width:100%;height:120px;display:block}
+.ix svg text{fill:var(--muted);font:400 10px var(--sans)}
+.ix .grid-l{stroke:var(--line)}
+.ix .rng{fill:var(--band);opacity:.1}
+.ix .sd{fill:var(--band);opacity:.22}
+.ix .mean{stroke:var(--band);stroke-width:1;stroke-dasharray:3 3;fill:none;opacity:.8}
+.ix .yr{stroke:var(--mark);stroke-width:2.2;fill:none}
+.ix .cur{stroke:var(--ink);stroke-width:1;opacity:.45}
+.key{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:0 0 12px}
+.key i{display:inline-block;width:16px;height:10px;margin-right:6px;vertical-align:-1px;border-radius:2px}
+
+.findings{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 36px}
+.findings article h3{font:600 1.1rem/1.3 var(--serif);margin:0 0 6px}
+.findings article p{margin:0;font:400 1rem/1.6 var(--serif)}
+.caveat{margin-top:22px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--panel);font-size:.9rem;max-width:52rem}
+.fc-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.fc-top .modes{width:auto;grid-template-columns:repeat(2,auto)}
+.fc-chart{width:100%;height:280px;display:block;cursor:pointer}
+.fc-chart text{fill:var(--muted);font:400 11px var(--sans)}
+.fc-chart .grid-l{stroke:var(--line)}
+.fc-chart .mem{fill:var(--band);opacity:.38}
+.fc-chart .gmean{stroke:var(--band);stroke-width:2;fill:none}
+.fc-chart .gfs{stroke:var(--ink);stroke-width:1.6;fill:none;stroke-dasharray:5 3}
+.fc-chart .gfsd{fill:var(--ink)}
+.fc-chart .ecm{fill:var(--ec);opacity:.38}
+.fc-chart .emean{stroke:var(--ec);stroke-width:2;fill:none}
+.fc-chart .hres{stroke:var(--ec);stroke-width:1.6;fill:none;stroke-dasharray:5 3}
+.fc-chart .hresd{fill:var(--ec)}
+.fc-chart .obs{stroke:var(--mark);stroke-width:2}
+.fc-chart .obsl{fill:var(--mark);font-weight:600}
+.fc-chart .era{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:2 3}
+.fc-chart .eral{fill:var(--muted)}
+.fc-maps figcaption .modes{display:inline-grid;grid-template-columns:auto auto;gap:4px;margin-left:8px;vertical-align:middle}
+.fc-maps figcaption .modes button{padding:3px 8px;font-size:.78rem}
+.fc-chart .sel{fill:var(--accent);opacity:.1}
+.fc-maps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.fc-maps figure{margin:0}
+.fc-maps figcaption{font-size:.88rem;margin-bottom:6px}
+.fc-maps figcaption span{color:var(--muted)}
+.fmap{position:relative;width:100%;background:var(--mapframe);border-radius:6px;overflow:hidden}
+.fmap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.fmap .tag{position:absolute;left:8px;bottom:8px;padding:3px 7px;border-radius:4px;background:rgba(8,20,30,.8);color:#E6EEF2;font-size:.78rem;font-variant-numeric:tabular-nums}
+.fc-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,16rem);gap:14px 28px;align-items:end;margin-top:14px}
+.fc-controls .modes{grid-template-columns:repeat(3,auto)}
+.fc-slider label{display:block;font-size:.88rem;margin-bottom:4px}
+.fc-slider input{width:100%;accent-color:var(--accent)}
+@media (max-width:860px){ .fc-maps,.fc-controls{grid-template-columns:minmax(0,1fr)} .fc-chart{height:240px} }
+footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (max-width:860px){
+  header.intro,.explorer,.findings{grid-template-columns:minmax(0,1fr)}
+  .timeline{grid-template-columns:auto minmax(0,1fr)}
+  .when{grid-column:1/-1;text-align:left}
+  .when strong{display:inline;margin-right:8px}
+  .wrap{padding:16px 16px 40px}
+}
+</style>
+<script>
+// Pages here load data files, which browsers block for pages opened straight from disk (file://)
+if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
+  const page = location.pathname.split("/").pop() || "index.html", d = document.createElement("div");
+  d.setAttribute("role", "alert");
+  d.style.cssText = "position:sticky;top:0;z-index:100;padding:12px 16px;background:#7a1f3d;color:#fff;font:500 14px/1.45 system-ui,sans-serif";
+  d.innerHTML = `This page was opened as a file, so its data cannot load and the maps and buttons will not work. Open it through a local web server instead: in the project folder run <code style="background:rgba(255,255,255,.18);padding:1px 5px;border-radius:3px">python3 -m http.server 8765</code>, then go to <a style="color:#fff" href="http://localhost:8765/${page}">http://localhost:8765/${page}</a>.`;
+  document.body.prepend(d);
+});
+</script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumbs" aria-label="Site"><a href="index.html">← Home</a><a href="helene_viewer.html">Helene event replay</a></nav>
+  <header class="intro">
+    <div>
+      <h1>Before Helene</h1>
+      <p class="dates">8–26 September 2024: the ingredients in place before landfall</p>
+    </div>
+    <p class="lede">Helene made landfall on the night of 26 September. This page looks at the weeks leading up to it in ERA5, day by day, against the same dates in every year since 1991. Which ingredients for an extreme rain event were already unusual, how early, and what did the forecasts issued at the time predict?</p>
+  </header>
+
+  <main>
+    <section aria-label="Map explorer">
+      <div class="explorer">
+        <div>
+          <div class="map" id="map">
+            <canvas id="mapc" aria-label="Map of the selected field"></canvas>
+            <div class="readout" id="readout">Loading data…</div>
+          </div>
+          <div class="timeline">
+            <button class="play" id="play" type="button" aria-label="Play">▶</button>
+            <div class="track">
+              <input type="range" id="day" min="0" max="18" step="1" value="18" aria-label="Day">
+              <div class="ticks" id="ticks"></div>
+            </div>
+            <div class="when" aria-live="polite"><strong id="whenDate"></strong><span id="whenLead"></span></div>
+          </div>
+        </div>
+        <aside class="controls" aria-label="Map controls">
+          <fieldset><legend>Ingredient</legend><div class="btns" id="layers"></div></fieldset>
+          <fieldset><legend>Show</legend><div class="modes" id="modes"></div></fieldset>
+          <label class="opt"><input type="checkbox" id="hgt" checked> 500 hPa height lines</label>
+          <div class="cb">
+            <p class="cbname" id="cbName"></p>
+            <canvas id="cbar" width="256" height="1"></canvas>
+            <div class="cbticks" id="cbTicks"></div>
+          </div>
+          <p class="note" id="note"></p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="ixh">
+      <h2 id="ixh">Ingredient by ingredient</h2>
+      <p class="sub">Each panel averages one ingredient over a box (outlined on the map when selected). The pink line is 2024. Click a panel to map it.</p>
+      <div class="key"><span><i style="background:var(--mark);height:3px;vertical-align:3px"></i>2024</span><span><i style="background:var(--band);opacity:.35"></i>1991–2020 average ± 1 standard deviation</span><span><i style="background:var(--band);opacity:.12"></i>Range, 1991–2023</span></div>
+      <div class="grid" id="indices"></div>
+    </section>
+
+    <section class="block" aria-labelledby="fch">
+      <h2 id="fch">What the forecasts said</h2>
+      <p class="sub">Rain predicted for 25 Sep 00 UTC to 28 Sep 00 UTC, which covers the rain ahead of the storm and Helene itself, by each 00 UTC model run issued from 14 to 25 September. Two forecasting centers: NOAA (GFS, and its 31-member GEFS ensemble) and ECMWF (HRES, and its 51-member ENS ensemble). HRES runs reach 10 days, so it starts on 18 September. What fell comes from NCEP Stage IV, radar estimates adjusted to rain gauges.</p>
+      <div class="fc-top">
+        <div class="key" style="margin:0"><span><i style="background:var(--band);opacity:.5;border-radius:50%;width:8px;height:8px"></i>GEFS members</span><span><i style="background:var(--band);height:3px;vertical-align:3px"></i>GEFS mean</span><span><i style="background:var(--ink);height:2px;vertical-align:3px"></i>GFS</span><span><i style="background:var(--ec);opacity:.6;border-radius:50%;width:8px;height:8px"></i>ECMWF ENS members</span><span><i style="background:var(--ec);height:3px;vertical-align:3px"></i>ENS mean</span><span><i style="background:var(--ec);height:2px;vertical-align:3px;opacity:.8"></i>ECMWF HRES (dashed)</span><span><i style="background:var(--mark);height:3px;vertical-align:3px"></i>What fell (Stage IV)</span><span><i style="background:var(--muted);height:2px;vertical-align:3px"></i>ERA5 (dotted)</span></div>
+        <div class="modes" id="fcWhere" role="group" aria-label="Area"></div>
+      </div>
+      <svg class="fc-chart" id="fcChart" aria-label="Forecast rain by the date each forecast was issued"></svg>
+      <div class="fc-maps">
+        <figure><figcaption><b id="fcMapTitle">Forecast</b> <span id="fcMapSub"></span></figcaption><div class="fmap" id="fmapA"><canvas></canvas><span class="tag" id="fcTagA"></span></div></figure>
+        <figure><figcaption><b>What fell</b> <span id="fcObsSub">same 72 hours</span><span class="modes" id="fcObs" role="group" aria-label="Observed rain source"></span></figcaption><div class="fmap" id="fmapB"><canvas></canvas><span class="tag" id="fcTagB"></span></div></figure>
+      </div>
+      <div class="fc-controls">
+        <div class="fc-slider">
+          <label for="fcInit" id="fcInitLabel"></label>
+          <input type="range" id="fcInit" min="0" max="11" step="1" value="9">
+          <div class="modes" id="fcModes" role="group" aria-label="Forecast shown" style="margin-top:10px"></div>
+        </div>
+        <div class="cb"><p class="cbname" id="fcCbName"></p><canvas id="fcCbar" width="256" height="1"></canvas><div class="cbticks" id="fcCbTicks"></div></div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="fh">
+      <h2 id="fh">What the setup showed</h2>
+      <div class="findings" id="findings"></div>
+      <p class="caveat" id="caveat"></p>
+    </section>
+  </main>
+
+  <footer id="footer">Data: ERA5 reanalysis, Copernicus Climate Change Service, via ARCO-ERA5. Coastlines and borders: Natural Earth via world-atlas and us-atlas.</footer>
+</div>
+
+<script>
+const DATA = "data/precursors/";
+const GEO_CDN = "https://cdn.jsdelivr.net/npm/";
+const LANDFALL = new Date(Date.UTC(2024,8,27,3));
+
+/* colour scales: [fraction, [r,g,b]] */
+const RAMPS = {
+  heat:[[0,[40,60,150]],[.25,[60,150,200]],[.5,[240,230,160]],[.75,[240,130,60]],[1,[170,30,50]]],
+  wet:[[0,[120,90,55]],[.3,[195,175,115]],[.55,[90,165,140]],[.8,[40,115,185]],[1,[70,50,160]]],
+  hgt:[[0,[60,40,120]],[.35,[50,120,170]],[.65,[110,190,140]],[1,[245,225,110]]],
+  shear:[[0,[245,245,235]],[.3,[240,200,110]],[.6,[220,110,60]],[1,[130,30,70]]],
+  ivt:[[0,[30,40,60]],[.15,[240,225,130]],[.45,[245,165,60]],[.75,[200,50,90]],[1,[110,40,160]]],
+  divRB:[[0,[40,80,170]],[.25,[120,170,220]],[.5,[245,245,242]],[.75,[235,140,100]],[1,[165,30,45]]],
+  divBG:[[0,[140,90,40]],[.25,[210,175,120]],[.5,[245,245,242]],[.75,[110,185,175]],[1,[20,100,120]]]
+};
+const LAYERS = {
+  sst:  {short:"Sea temperature", ramp:"heat",  div:"divRB", range:[24,32], fmt:1},
+  pw:   {short:"Moisture",        ramp:"wet",   div:"divBG", range:[15,70], fmt:0},
+  swvl1:{short:"Soil moisture",   ramp:"wet",   div:"divBG", range:[0.05,0.5], fmt:2},
+  z500: {short:"500 hPa height",  ramp:"hgt",   div:"divRB", range:[5650,5950], fmt:0},
+  shear:{short:"Wind shear",      ramp:"shear", div:"divRB", range:[0,35], fmt:1},
+  ivt:  {short:"Vapor transport", ramp:"ivt",   div:"divBG", range:[0,900], fmt:0}
+};
+const MODES = {anom:"Anomaly", sigma:"How unusual", value:"2024 value"};
+function lut(stops){
+  const a=new Uint8ClampedArray(256*3);
+  for (let i=0;i<256;i++){ const f=i/255; let j=0; while (j<stops.length-2&&f>stops[j+1][0]) j++;
+    const [f0,c0]=stops[j],[f1,c1]=stops[j+1], w=Math.min(1,Math.max(0,(f-f0)/(f1-f0)));
+    for (let c=0;c<3;c++) a[i*3+c]=c0[c]+(c1[c]-c0[c])*w; }
+  return a;
+}
+const LUT=Object.fromEntries(Object.entries(RAMPS).map(([k,s])=>[k,lut(s)]));
+
+const $=id=>document.getElementById(id);
+const S={meta:null, layer:"sst", mode:"anom", day:18, hgt:true, ix:"gulf_sst", bins:{}, hover:null, playing:false};
+
+/* ---------- data ---------- */
+async function bin(file){
+  if (!S.bins[file]) S.bins[file]=fetch(DATA+file).then(r=>{ if(!r.ok) throw 0; return r.arrayBuffer(); }).then(b=>new Uint8Array(b));
+  return S.bins[file];
+}
+async function frame(layer, mode, day){
+  const L=S.meta.layers[layer][mode], g=S.meta.grid, N=g.nx*g.ny, q=await bin(L.file), s=(L.vmax-L.vmin)/254, out=new Float32Array(N);
+  for (let i=0;i<N;i++){ const v=q[day*N+i]; out[i]=v===255?NaN:L.vmin+v*s; }
+  return out;
+}
+function scaleFor(layer, mode){
+  const L=LAYERS[layer], f=S.meta.layers[layer][mode];
+  if (mode==="value") return {ramp:L.ramp, lo:L.range[0], hi:L.range[1]};
+  if (mode==="sigma") return {ramp:L.div, lo:-3, hi:3};
+  const m=niceMax(Math.max(Math.abs(f.vmin),Math.abs(f.vmax)));
+  return {ramp:L.div, lo:-m, hi:m};
+}
+function niceMax(v){ const p=Math.pow(10,Math.floor(Math.log10(v))), n=v/p; return (n<=1.5?1.5:n<=2?2:n<=3?3:n<=5?5:n<=7.5?7.5:10)*p; }
+
+/* ---------- map ---------- */
+const P={W:0,H:0,dpr:1};
+const geo={};
+let field=null, z500=null;
+function g(){ return S.meta.grid; }
+const lon1=()=>g().lon0+(g().nx-1)*g().d, lat1=()=>g().lat0-(g().ny-1)*g().d;
+const px=lon=>(lon-g().lon0)/(lon1()-g().lon0)*P.W;
+const py=lat=>(g().lat0-lat)/(g().lat0-lat1())*P.H;
+const proj=d3.geoTransform({point(lon,lat){ this.stream.point(px(lon),py(lat)); }});
+function resize(){
+  const r=$("map").getBoundingClientRect(); P.dpr=Math.min(2,devicePixelRatio||1);
+  P.W=Math.round(r.width*P.dpr); P.H=Math.round(r.height*P.dpr); $("mapc").width=P.W; $("mapc").height=P.H; render();
+}
+const off=document.createElement("canvas");
+async function update(){
+  if (!S.meta) return;
+  const day=S.day, layer=S.layer, mode=S.mode;
+  const [f, z]=await Promise.all([frame(layer,mode,day), S.hgt?frame("z500","value",day):null]);
+  if (day!==S.day||layer!==S.layer||mode!==S.mode) return;
+  field=f; z500=z; render(); drawColorbar(); updateReadout();
+}
+function render(){
+  if (!S.meta||!P.W) return;
+  const ctx=$("mapc").getContext("2d"), G=g();
+  ctx.fillStyle="#0c2232"; ctx.fillRect(0,0,P.W,P.H);
+  const path=d3.geoPath(proj, ctx);
+  if (geo.land){ ctx.beginPath(); path(geo.land); ctx.fillStyle="#3a4b54"; ctx.fill(); }
+  if (field){
+    const sc=scaleFor(S.layer,S.mode), lt=LUT[sc.ramp], k=255/(sc.hi-sc.lo);
+    off.width=G.nx; off.height=G.ny; const o=off.getContext("2d"), img=o.createImageData(G.nx,G.ny);
+    for (let i=0;i<field.length;i++){ const v=field[i]; if (v!==v) continue; let q=Math.round((v-sc.lo)*k); q=q<0?0:q>255?255:q; img.data[i*4]=lt[q*3]; img.data[i*4+1]=lt[q*3+1]; img.data[i*4+2]=lt[q*3+2]; img.data[i*4+3]=235; }
+    o.putImageData(img,0,0); ctx.imageSmoothingEnabled=true;
+    const hx=P.W/(G.nx-1)/2, hy=P.H/(G.ny-1)/2; ctx.drawImage(off,-hx,-hy,P.W+2*hx,P.H+2*hy);
+  }
+  ctx.lineJoin="round";
+  if (geo.states){ ctx.beginPath(); path(geo.states); ctx.strokeStyle="rgba(20,30,38,.35)"; ctx.lineWidth=.7*P.dpr; ctx.stroke(); }
+  if (geo.borders){ ctx.beginPath(); path(geo.borders); ctx.strokeStyle="rgba(20,30,38,.55)"; ctx.lineWidth=.9*P.dpr; ctx.stroke(); }
+  if (geo.land){ ctx.beginPath(); path(geo.land); ctx.strokeStyle="rgba(15,25,32,.85)"; ctx.lineWidth=1*P.dpr; ctx.stroke(); }
+  if (z500) drawHeights(ctx);
+  const ix=S.meta.indices[S.ix];
+  if (ix){ const [s,n,w,e]=ix.box; ctx.setLineDash([6*P.dpr,4*P.dpr]); ctx.lineWidth=2*P.dpr; ctx.strokeStyle="rgba(255,255,255,.95)";
+    ctx.strokeRect(px(w),py(n),px(e)-px(w),py(s)-py(n)); ctx.setLineDash([]); }
+}
+function drawHeights(ctx){
+  const G=g(), th=d3.range(5640,6000,30), cs=d3.contours().size([G.nx,G.ny]).thresholds(th)(Array.from(z500,v=>v===v?v:5800));
+  const X=c=>px(G.lon0+(c-.5)*G.d), Y=r=>py(G.lat0-(r-.5)*G.d);
+  ctx.font=`500 ${10.5*P.dpr}px "IBM Plex Sans",sans-serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+  for (const c of cs){
+    const thick=c.value===5880; let best=null;
+    ctx.beginPath();
+    for (const poly of c.coordinates) for (const ring of poly){
+      ring.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));
+      if (!best||ring.length>best.length) best=ring;
+    }
+    ctx.strokeStyle="rgba(10,18,24,.85)"; ctx.lineWidth=(thick?2.2:1)*P.dpr; ctx.stroke();
+    if (best&&best.length>30){ const p=best[Math.floor(best.length*0.3)], x=X(p[0]), y=Y(p[1]);
+      if (x>20&&x<P.W-20&&y>20&&y<P.H-20){ ctx.lineWidth=3*P.dpr; ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.strokeText(c.value/10,x,y); ctx.fillStyle="#0a1218"; ctx.fillText(c.value/10,x,y); } }
+  }
+}
+function drawColorbar(){
+  const sc=scaleFor(S.layer,S.mode), lt=LUT[sc.ramp], c=$("cbar").getContext("2d"), img=c.createImageData(256,1);
+  for (let i=0;i<256;i++){ img.data[i*4]=lt[i*3]; img.data[i*4+1]=lt[i*3+1]; img.data[i*4+2]=lt[i*3+2]; img.data[i*4+3]=255; }
+  c.putImageData(img,0,0);
+  const L=S.meta.layers[S.layer], unit=S.mode==="sigma"?"standard deviations":L.unit;
+  $("cbName").textContent=S.mode==="value"?`${L.label}, ${unit}`:S.mode==="anom"?`${L.label}: difference from 1991–2020, ${unit}`:`${L.label}: ${unit} from the 1991–2020 average`;
+  const d=LAYERS[S.layer].fmt;
+  $("cbTicks").innerHTML=[0,.25,.5,.75,1].map(f=>{ const v=sc.lo+f*(sc.hi-sc.lo); return `<span>${(S.mode!=="value"&&v>0?"+":"")+fmt(v, S.mode==="sigma"?1:d)}</span>`; }).join("");
+}
+function fmt(v,d){ return Math.abs(v)>=1000?Math.round(v).toLocaleString("en-US"):v.toFixed(d); }
+function updateReadout(){
+  const el=$("readout");
+  if (!S.hover||!field){ el.textContent="Hover for values"; return; }
+  const G=g(), c=Math.round((S.hover.lon-G.lon0)/G.d), r=Math.round((G.lat0-S.hover.lat)/G.d);
+  const loc=`${S.hover.lat.toFixed(1)}°N, ${Math.abs(S.hover.lon).toFixed(1)}°W`;
+  if (c<0||r<0||c>=G.nx||r>=G.ny){ el.textContent=loc; return; }
+  const v=field[r*G.nx+c], L=S.meta.layers[S.layer], d=LAYERS[S.layer].fmt;
+  if (v!==v){ el.textContent=loc; return; }
+  const txt=S.mode==="value"?`${fmt(v,d)} ${L.unit}`:S.mode==="anom"?`${v>0?"+":""}${fmt(v,d)} ${L.unit} vs 1991–2020`:`${v>0?"+":""}${v.toFixed(1)} standard deviations`;
+  el.innerHTML=`<b>${LAYERS[S.layer].short}</b> ${txt}<br>${loc}`;
+}
+
+/* ---------- day & controls ---------- */
+function daysBefore(i){ const d=new Date(S.meta.dates[i]+"T12:00Z"); return Math.round((LANDFALL-d)/36e5/24*10)/10; }
+function setDay(i, fromSlider){
+  S.day=i; if (!fromSlider) $("day").value=i;
+  const d=new Date(S.meta.dates[i]+"T12:00Z");
+  $("whenDate").textContent=d.toLocaleDateString("en-US",{timeZone:"UTC",weekday:"short",day:"numeric",month:"short"})+", 12 UTC";
+  const h=Math.round((LANDFALL-d)/36e5);
+  $("whenLead").textContent=h>=48?`${Math.round(h/24)} days before landfall`:`${h} hours before landfall`;
+  update(); updateCharts();
+}
+function sync(){
+  document.querySelectorAll("#layers button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===S.layer)));
+  document.querySelectorAll("#modes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===S.mode)));
+  document.querySelectorAll(".ix").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===S.ix)));
+  $("hgt").checked=S.hgt; update();
+}
+
+/* ---------- index charts ---------- */
+function buildCharts(){
+  const host=$("indices");
+  for (const [k,ix] of Object.entries(S.meta.indices)){
+    const b=document.createElement("button"); b.className="ix"; b.type="button"; b.dataset.k=k;
+    b.innerHTML=`<h3>${ix.label}</h3><p class="why">${ix.why}</p><div class="stat" id="st_${k}"></div><svg id="sv_${k}" aria-label="${ix.label}, 2024 against 1991–2020"></svg>`;
+    b.onclick=()=>{ S.ix=k; S.layer=ix.layer; sync(); $("map").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"}); };
+    host.appendChild(b);
+  }
+  drawCharts();
+}
+function drawCharts(){
+  const n=S.meta.dates.length;
+  for (const [k,ix] of Object.entries(S.meta.indices)){
+    const svg=$("sv_"+k), W=svg.clientWidth||300, H=120, m={l:38,r:8,t:6,b:18};
+    const lo=Math.min(...ix.min,...ix.value), hi=Math.max(...ix.max,...ix.value), pad=(hi-lo)*0.08;
+    const X=d3.scaleLinear([0,n-1],[m.l,W-m.r]), Y=d3.scaleLinear([lo>=0?Math.max(0,lo-pad):lo-pad,hi+pad],[H-m.b,m.t]).nice(4);
+    const area=(a,b)=>d3.area().x((_,i)=>X(i)).y0((_,i)=>Y(a[i])).y1((_,i)=>Y(b[i]))(a);
+    const line=a=>d3.line().x((_,i)=>X(i)).y(v=>Y(v))(a);
+    const sdLo=ix.mean.map((v,i)=>v-ix.std[i]), sdHi=ix.mean.map((v,i)=>v+ix.std[i]);
+    const d=LAYERS[ix.layer].fmt;
+    let s=Y.ticks(4).map(t=>`<line class="grid-l" x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l-5}" y="${Y(t)+3}" text-anchor="end">${fmt(t,d)}</text>`).join("");
+    [0,6,12,n-1].forEach(i=>{ if(i<n){ const dt=new Date(S.meta.dates[i]+"T12:00Z"); s+=`<text x="${X(i)}" y="${H-4}" text-anchor="${i===n-1?"end":i===0?"start":"middle"}">${dt.toLocaleDateString("en-US",{timeZone:"UTC",month:"short",day:"numeric"})}</text>`; }});
+    s+=`<path class="rng" d="${area(ix.min,ix.max)}"/><path class="sd" d="${area(sdLo,sdHi)}"/><path class="mean" d="${line(ix.mean)}"/><path class="yr" d="${line(ix.value)}"/><line class="cur" id="cu_${k}" y1="${m.t}" y2="${H-m.b}"/>`;
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.innerHTML=s; svg._X=X;
+  }
+  updateCharts();
+}
+function ord(n){ const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function updateCharts(){
+  if (!S.meta) return;
+  const i=S.day;
+  for (const [k,ix] of Object.entries(S.meta.indices)){
+    const svg=$("sv_"+k), c=$("cu_"+k); if (c&&svg._X){ c.setAttribute("x1",svg._X(i)); c.setAttribute("x2",svg._X(i)); }
+    const v=ix.value[i], an=v-ix.mean[i], z=an/ix.std[i], d=LAYERS[ix.layer].fmt, r=ix.rank[i], N=ix.years;
+    const rk=r<=N/2?`${r===1?"highest":ord(r)+" highest"} of ${N} years`:`${N-r+1===1?"lowest":ord(N-r+1)+" lowest"} of ${N} years`;
+    $("st_"+k).innerHTML=`<b>${fmt(v,d)}</b><span>${ix.unit}</span><span>${an>0?"+":""}${fmt(an,d)} (${z>0?"+":""}${z.toFixed(1)}σ)</span><span class="rank">${rk}</span>`;
+  }
+}
+
+/* ---------- start ---------- */
+(async function init(){
+  try { const r=await fetch(DATA+"meta.json",{cache:"no-cache"}); if(!r.ok) throw 0; S.meta=await r.json(); }
+  catch(e){ $("readout").textContent="Data not found. Run prepare_precursors.py to build data/precursors/."; return; }
+  const G=g(); G.k=Math.cos((G.lat0+lat1())/2*Math.PI/180);
+  $("map").style.aspectRatio=`${(lon1()-G.lon0)*G.k} / ${G.lat0-lat1()}`;
+  $("note").textContent=S.meta.note;
+  for (const [k,L] of Object.entries(LAYERS)){ const b=document.createElement("button"); b.type="button"; b.textContent=L.short; b.dataset.k=k; b.onclick=()=>{ S.layer=k; const m=Object.entries(S.meta.indices).find(([,x])=>x.layer===k); if(m) S.ix=m[0]; sync(); }; $("layers").appendChild(b); }
+  for (const [k,l] of Object.entries(MODES)){ const b=document.createElement("button"); b.type="button"; b.textContent=l; b.dataset.k=k; b.onclick=()=>{ S.mode=k; sync(); }; $("modes").appendChild(b); }
+  $("hgt").onchange=e=>{ S.hgt=e.target.checked; update(); };
+  const n=S.meta.dates.length; $("day").max=n-1;
+  $("ticks").innerHTML=S.meta.dates.map((d,i)=>i%3===0?`<span style="left:${i/(n-1)*100}%">${+d.slice(8)} Sep</span>`:"").join("");
+  $("day").addEventListener("input",e=>{ pause(); setDay(+e.target.value,true); });
+  $("play").onclick=()=>S.playing?pause():play();
+  const map=$("map");
+  map.addEventListener("mousemove",e=>{ const r=map.getBoundingClientRect(); S.hover={lon:g().lon0+(e.clientX-r.left)/r.width*(lon1()-g().lon0), lat:g().lat0-(e.clientY-r.top)/r.height*(g().lat0-lat1())}; updateReadout(); });
+  map.addEventListener("mouseleave",()=>{ S.hover=null; updateReadout(); });
+  buildCharts(); writeFindings();
+  new ResizeObserver(resize).observe(map);
+  let cw=0; new ResizeObserver(()=>{ const w=$("indices").clientWidth; if (w!==cw){ cw=w; drawCharts(); } }).observe($("indices"));
+  setDay(n-1); sync();
+  try {
+    const [land,countries,us]=await Promise.all(["world-atlas@2.0.2/land-50m.json","world-atlas@2.0.2/countries-50m.json","us-atlas@3.0.1/states-10m.json"].map(f=>fetch(GEO_CDN+f).then(r=>r.json())));
+    geo.land=topojson.feature(land,land.objects.land);
+    geo.borders=topojson.mesh(countries,countries.objects.countries,(a,b)=>a!==b);
+    geo.states=topojson.mesh(us,us.objects.states,(a,b)=>a!==b);
+    render(); FC.render();
+  } catch(e){}
+})();
+let timer=null;
+function play(){ S.playing=true; $("play").textContent="❚❚"; $("play").setAttribute("aria-label","Pause"); if (S.day>=S.meta.dates.length-1) setDay(0);
+  timer=setInterval(()=>{ if (S.day>=S.meta.dates.length-1){ pause(); return; } setDay(S.day+1); }, 700); }
+function pause(){ S.playing=false; clearInterval(timer); $("play").textContent="▶"; $("play").setAttribute("aria-label","Play"); }
+
+/* ---------- findings (written from the computed numbers) ---------- */
+function writeFindings(){
+  $("findings").innerHTML = FINDINGS.map(f=>`<article><h3>${f.h}</h3><p>${f.p}</p></article>`).join("");
+  $("caveat").innerHTML = CAVEAT;
+}
+const FINDINGS = [
+  {h:"Weeks ahead: the ocean was already primed",
+   p:"The Gulf of Mexico averaged about 30.3 °C through mid-September, 2 to 3.6 standard deviations above the 1991–2020 average and the second warmest of 34 years on every day from 13 to 26 September. The northwestern Caribbean, where Helene formed, was the warmest on record for those dates from 14 to 18 September. This was the one ingredient visible two weeks out."},
+  {h:"Until a few days before, the atmosphere looked ordinary",
+   p:"From 8 to 23 September, moisture and vapor transport over the Southeast, and the 500 hPa pattern over the Tennessee Valley, mostly sat within one standard deviation of normal. Wind shear over the eastern Gulf swung up and down and was strong (second highest) on 15–17 September. A warm ocean alone did not mark the Southeast as the target."},
+  {h:"Three days out: the setup came together",
+   p:"On 23 September shear over the eastern Gulf fell to 8.8 m/s, the second lowest of 34 years for that date, as Helene was organizing. From 24 to 26 September heights over the Tennessee and Ohio valleys fell by about 100 m, the trough that would pull Helene north. Vapor transport into the Southeast rose to 500 kg m⁻¹ s⁻¹ on 26 September, the second highest for that date."},
+  {h:"The last two days: soils filled up",
+   p:"Topsoil in the southern Appalachians was among the driest for the season on 8–12 September, recovered after rain around 13 September, and stayed near normal until 25 September. Rain ahead of the storm then drove it to the wettest on record for 26 September, hours before Helene's core arrived. Antecedent wetness, which turned the rain into flooding, was a short-lead signal, not a weeks-long one."},
+  {h:"NOAA's models saw the flood only a day or two ahead",
+   p:"For 25–28 September Stage IV, which blends radar with rain gauges, has 229 mm averaged over the southern Appalachian box, 325 mm near Asheville, and up to 648 mm (25.5 in) at one 4 km pixel; half the box got at least 200 mm. GFS runs issued 4 to 5 days earlier predicted about 50 mm for the box, and the run from 23 September, two days out, predicted 95 mm with its heaviest rain over northern Alabama, about 400 km too far west. In the GEFS ensemble, at most 3 of 31 members put 200 mm (8 in) anywhere in the box until the 24 September run, when 14 did."},
+  {h:"ECMWF's ensemble raised the alarm a couple of days sooner",
+   p:"The ECMWF ensemble began to show the risk 3 to 4 days out: 9 of 51 members put 200 mm in the box in the run from 21 September and 20 of 51 on 22 September, when GEFS had 1 and 2. It dipped to 12 on 23 September, then rose to 39 and 49. Its deterministic HRES run was less consistent, swinging from 2–4 mm on 19–21 September to 91 mm on 22 September and 60 mm on 23 September."},
+  {h:"Every ensemble mean fell short",
+   p:"No run of either ensemble had a mean as large as what fell: the best were 133 mm (GEFS) and 147 mm (ECMWF) on 25 September, against 229 mm in Stage IV (214 mm in ERA5). Together with the precursor fields, this suggests the warm ocean was the only long-lead signal. A real chance of a mountain flood appeared about 3 to 4 days ahead in ECMWF's ensemble and about 1 day ahead in NOAA's, and models at this resolution still underestimated the totals."}
+];
+const CAVEAT = "<b>What this does and does not show.</b> The precursor fields are ERA5 at 12 UTC each day, averaged over fixed boxes. The forecasts are raw model output (GFS and ECMWF at 0.25°, GEFS at 0.5°), compared with NCEP Stage IV, radar estimates adjusted to rain gauges at 4 km, with ERA5 as a second reference. Stage IV is the better measure of what fell, but in steep terrain radar beams are partly blocked, so it can still miss rain that individual gauges caught. Official WPC and NHC forecasts, which combine several models with forecaster judgment, are not included.";
+/* ---------- forecasts ---------- */
+const FC = (() => {
+  const RAIN=[[0,[120,170,230,0]],[0.02,[120,170,230,0]],[0.05,[110,165,230,.6]],[0.15,[45,110,215,.8]],[0.3,[50,180,120,.9]],[0.5,[245,215,60,.95]],[0.7,[240,110,40,1]],[0.87,[205,30,90,1]],[1,[245,170,245,1]]];
+  const PROB=[[0,[0,0,0,0]],[0.04,[0,0,0,0]],[0.06,[200,190,240,.6]],[0.3,[150,120,220,.85]],[0.6,[110,60,190,.95]],[1,[60,20,120,1]]];
+  const mk=stops=>{ const a=new Uint8ClampedArray(1024); for (let i=0;i<256;i++){ const f=i/255; let j=0; while (j<stops.length-2&&f>stops[j+1][0]) j++;
+    const [f0,c0]=stops[j],[f1,c1]=stops[j+1], w=Math.min(1,Math.max(0,(f-f0)/(f1-f0))); for (let c=0;c<3;c++) a[i*4+c]=c0[c]+(c1[c]-c0[c])*w; a[i*4+3]=255*(c0[3]+(c1[3]-c0[3])*w); } return a; };
+  const LR=mk(RAIN), LP=mk(PROB), RMAX=400;
+  const MODES={gfs:"GFS", gefs_mean:"GEFS mean", gefs_prob:"GEFS chance ≥ 200 mm", hres:"ECMWF HRES", ec_mean:"ECMWF ENS mean", ec_prob:"ENS chance ≥ 200 mm"};
+  const PROBS={gefs_prob:{n:31, key:"probBoxCell"}, ec_prob:{n:51, key:"ecProbBoxCell"}};
+  const VAL={gfs:r=>[r.gfsBox,r.gfsPoint], gefs_mean:r=>[mean(r.gefsBox),mean(r.gefsPoint)], hres:r=>[r.hresBox,r.hresPoint], ec_mean:r=>[mean(r.ecBox),mean(r.ecPoint)]};
+  const F={meta:null, i:9, mode:"gfs", where:"box", obs:"stage4", bins:{}};
+  const $=id=>document.getElementById(id);
+  async function bin(k){ if (!F.bins[k]) F.bins[k]=fetch("data/forecasts/"+F.meta.maps[k].file).then(r=>r.arrayBuffer()).then(b=>new Uint8Array(b)); return F.bins[k]; }
+  const lead=r=>r.leadDays===0?"on the day the window began":r.leadDays===1?"1 day before the window":`${r.leadDays} days before the window`;
+  const date=s=>new Date(s+"Z").toLocaleDateString("en-US",{timeZone:"UTC",weekday:"short",day:"numeric",month:"short"});
+  const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+
+  function chart(){
+    const svg=$("fcChart"), W=svg.clientWidth||800, H=svg.clientHeight||280, m={l:44,r:16,t:14,b:38}, runs=F.meta.runs, n=runs.length;
+    const key=F.where==="box"?["gefsBox","gfsBox","era5Box","ecBox","hresBox","stage4Box"]:["gefsPoint","gfsPoint","era5Point","ecPoint","hresPoint","stage4Point"];
+    const era=F.meta[key[2]], obs=F.meta[key[5]], top=Math.max(obs, era, ...runs.flatMap(r=>r[key[0]].concat(r[key[3]])), ...runs.map(r=>r[key[1]]), ...runs.map(r=>r[key[4]]||0))*1.08;
+    const X=d3.scalePoint(d3.range(n),[m.l+18,W-m.r-18]), Y=d3.scaleLinear([0,top],[H-m.b,m.t]).nice(5);
+    const bw=(X.step()||40);
+    let s=Y.ticks(5).map(t=>`<line class="grid-l" x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`).join("");
+    s+=`<rect class="sel" id="fcSel" y="${m.t}" height="${H-m.t-m.b}" width="${bw}" x="${X(F.i)-bw/2}"/>`;
+    const every=bw<36?2:1;
+    runs.forEach((r,i)=>{ const d=new Date(r.init+"Z");
+      if ((n-1-i)%every===0) s+=`<text x="${X(i)}" y="${H-m.b+15}" text-anchor="middle">${d.getUTCDate()} Sep</text><text x="${X(i)}" y="${H-m.b+28}" text-anchor="middle">${r.leadDays}d</text>`;
+      r[key[0]].forEach((v,k)=>{ s+=`<circle class="mem" cx="${X(i)-bw*0.2+((k*7)%9-4)*bw/60}" cy="${Y(v)}" r="2.4"/>`; });
+      r[key[3]].forEach((v,k)=>{ s+=`<circle class="ecm" cx="${X(i)+bw*0.2+((k*7)%9-4)*bw/60}" cy="${Y(v)}" r="2.4"/>`; }); });
+    s+=`<path class="emean" d="${d3.line().x((_,i)=>X(i)+bw*0.2).y(r=>Y(mean(r[key[3]])))(runs)}"/>`;
+    const hl=d3.line().defined(r=>r[key[4]]!=null).x((_,i)=>X(i)+bw*0.2).y(r=>Y(r[key[4]]));
+    s+=`<path class="hres" d="${hl(runs)}"/>`+runs.map((r,i)=>r[key[4]]==null?"":`<circle class="hresd" cx="${X(i)+bw*0.2}" cy="${Y(r[key[4]])}" r="3"/>`).join("");
+    s+=`<path class="gmean" d="${d3.line().x((_,i)=>X(i)-bw*0.2).y(r=>Y(mean(r[key[0]])))(runs)}"/>`;
+    s+=`<path class="gfs" d="${d3.line().x((_,i)=>X(i)-bw*0.2).y(r=>Y(r[key[1]]))(runs)}"/>`+runs.map((r,i)=>`<circle class="gfsd" cx="${X(i)-bw*0.2}" cy="${Y(r[key[1]])}" r="3"/>`).join("");
+    s+=`<line class="era" x1="${m.l}" x2="${W-m.r}" y1="${Y(era)}" y2="${Y(era)}"/><text class="eral" x="${m.l+6}" y="${Y(era)-5}">ERA5: ${Math.round(era)} mm</text>`;
+    s+=`<line class="obs" x1="${m.l}" x2="${W-m.r}" y1="${Y(obs)}" y2="${Y(obs)}"/><text class="obsl" x="${m.l+6}" y="${Y(obs)-6}">What fell (Stage IV): ${Math.round(obs)} mm (${(obs/25.4).toFixed(1)} in)</text>`;
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.innerHTML=s; svg._X=X; svg._bw=bw;
+  }
+  function frame(k, idx){
+    return bin(k).then(q=>{ const M=F.meta.maps[k], [ny,nx]=M.shape, N=ny*nx, out=new Float32Array(N), sc=(M.vmax-M.vmin)/254;
+      for (let i=0;i<N;i++){ const v=q[idx*N+i]; out[i]=v===255?NaN:M.vmin+v*sc; } return {a:out,nx,ny}; });
+  }
+  function drawMap(el, fld, prob){
+    const cv=el.querySelector("canvas"), r=el.getBoundingClientRect(), dpr=Math.min(2,devicePixelRatio||1), W=cv.width=Math.round(r.width*dpr), H=cv.height=Math.round(r.height*dpr);
+    const [s0,n0,w0,e0]=F.meta.extent, X=lon=>(lon-w0)/(e0-w0)*W, Y=lat=>(n0-lat)/(n0-s0)*H;
+    const ctx=cv.getContext("2d"), path=d3.geoPath(d3.geoTransform({point(lon,lat){ this.stream.point(X(lon),Y(lat)); }}), ctx);
+    ctx.fillStyle="#0c2232"; ctx.fillRect(0,0,W,H);
+    if (geo.land){ ctx.beginPath(); path(geo.land); ctx.fillStyle="#2c3f48"; ctx.fill(); }
+    if (fld){
+      const o=document.createElement("canvas"); o.width=fld.nx; o.height=fld.ny; const oc=o.getContext("2d"), img=oc.createImageData(fld.nx,fld.ny), lt=prob?LP:LR, k=prob?255:255/RMAX;
+      for (let i=0;i<fld.a.length;i++){ const v=fld.a[i]; if (v!==v) continue; const q=Math.max(0,Math.min(255,Math.round(v*k)))*4; img.data.set(lt.subarray(q,q+4),i*4); }
+      oc.putImageData(img,0,0); ctx.imageSmoothingEnabled=true; const hx=W/(fld.nx-1)/2, hy=H/(fld.ny-1)/2; ctx.drawImage(o,-hx,-hy,W+2*hx,H+2*hy);
+    }
+    ctx.lineJoin="round";
+    if (geo.states){ ctx.beginPath(); path(geo.states); ctx.strokeStyle="rgba(225,236,242,.3)"; ctx.lineWidth=.7*dpr; ctx.stroke(); }
+    if (geo.land){ ctx.beginPath(); path(geo.land); ctx.strokeStyle="rgba(232,240,245,.7)"; ctx.lineWidth=.9*dpr; ctx.stroke(); }
+    const [bs,bn,bw_,be]=F.meta.box; ctx.setLineDash([5*dpr,4*dpr]); ctx.strokeStyle="#fff"; ctx.lineWidth=1.6*dpr; ctx.strokeRect(X(bw_),Y(bn),X(be)-X(bw_),Y(bs)-Y(bn)); ctx.setLineDash([]);
+    const p=F.meta.point; ctx.beginPath(); ctx.arc(X(p.lon),Y(p.lat),4*dpr,0,7); ctx.lineWidth=2.4*dpr; ctx.strokeStyle="#0a1b28"; ctx.stroke(); ctx.lineWidth=1.4*dpr; ctx.strokeStyle="#fff"; ctx.stroke();
+  }
+  async function render(){
+    if (!F.meta) return;
+    const r=F.meta.runs[F.i], k=F.mode, prob=k in PROBS;
+    $("fcInitLabel").innerHTML=`<b>Forecast issued ${date(r.init)}, 00 UTC</b> · ${lead(r)}`;
+    $("fcMapTitle").textContent=MODES[k]; $("fcMapSub").textContent=prob?`share of ${PROBS[k].n} members with at least 200 mm (8 in)`:`72-hour total, issued ${date(r.init)}`;
+    if (prob){ const p=r[PROBS[k].key]; $("fcTagA").textContent=`${Math.round(p*PROBS[k].n)} of ${PROBS[k].n} members put ≥ 200 mm somewhere in the box`; }
+    else { const [box,pt]=VAL[k](r); $("fcTagA").textContent=box==null?"No HRES run reaches this window (runs go out 10 days)":`Box ${Math.round(box)} mm · Asheville ${Math.round(pt)} mm`; }
+    const ob=F.obs==="stage4"?[F.meta.stage4Box,F.meta.stage4Point,"Stage IV radar and gauges, 4 km"]:[F.meta.era5Box,F.meta.era5Point,"ERA5 reanalysis, 0.25°"];
+    $("fcTagB").textContent=`Box ${Math.round(ob[0])} mm · Asheville ${Math.round(ob[1])} mm`; $("fcObsSub").textContent=`${ob[2]}, same 72 hours`;
+    document.querySelectorAll("#fcObs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===F.obs)));
+    const [fa,fb]=await Promise.all([frame(k,F.i), frame(F.obs,0)]);
+    drawMap($("fmapA"),fa,prob); drawMap($("fmapB"),fb,false);
+    const sel=$("fcSel"), svg=$("fcChart"); if (sel&&svg._X) sel.setAttribute("x",svg._X(F.i)-svg._bw/2);
+    document.querySelectorAll("#fcModes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===k)));
+    const c=$("fcCbar").getContext("2d"), img=c.createImageData(256,1), lt=prob?LP:LR;
+    for (let i=0;i<256;i++){ const a=lt[i*4+3]/255; for (let j=0;j<3;j++) img.data[i*4+j]=lt[i*4+j]*a+[12,34,50][j]*(1-a); img.data[i*4+3]=255; }
+    c.putImageData(img,0,0);
+    $("fcCbName").textContent=prob?"Chance of at least 200 mm in 72 hours":"Rain in 72 hours, mm";
+    $("fcCbTicks").innerHTML=(prob?["0%","25%","50%","75%","100%"]:[0,100,200,300,"400+"]).map(t=>`<span>${t}</span>`).join("");
+  }
+  async function init(){
+    try { const r=await fetch("data/forecasts/meta.json",{cache:"no-cache"}); if (!r.ok) throw 0; F.meta=await r.json(); } catch(e){ $("fcChart").outerHTML='<p class="sub">Forecast data not found. Run prepare_forecasts.py to build data/forecasts/.</p>'; return; }
+    const [s0,n0,w0,e0]=F.meta.extent, k=Math.cos((s0+n0)/2*Math.PI/180);
+    for (const id of ["fmapA","fmapB"]) $(id).style.aspectRatio=`${(e0-w0)*k} / ${n0-s0}`;
+    $("fcInit").max=F.meta.runs.length-1; F.i=Math.min(F.i,F.meta.runs.length-1); $("fcInit").value=F.i;
+    $("fcInit").addEventListener("input",e=>{ F.i=+e.target.value; render(); });
+    for (const [k,l] of Object.entries(MODES)){ const b=document.createElement("button"); b.type="button"; b.textContent=l; b.dataset.k=k; b.onclick=()=>{ F.mode=k; render(); }; $("fcModes").appendChild(b); }
+    for (const [k,l] of [["stage4","Stage IV"],["era5","ERA5"]]){ const b=document.createElement("button"); b.type="button"; b.textContent=l; b.dataset.k=k; b.onclick=()=>{ F.obs=k; render(); }; $("fcObs").appendChild(b); }
+    for (const [k,l] of [["box","Southern Appalachians box"],["point","Asheville"]]){ const b=document.createElement("button"); b.type="button"; b.textContent=l; b.dataset.k=k; b.setAttribute("aria-pressed",String(k===F.where));
+      b.onclick=()=>{ F.where=k; document.querySelectorAll("#fcWhere button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.k===k))); chart(); render(); }; $("fcWhere").appendChild(b); }
+    $("fcChart").addEventListener("click",e=>{ const svg=$("fcChart"), r=svg.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*(svg.viewBox.baseVal.width||r.width);
+      const dom=svg._X.domain(); let best=0; dom.forEach(i=>{ if (Math.abs(svg._X(i)-x)<Math.abs(svg._X(best)-x)) best=i; }); F.i=best; $("fcInit").value=best; render(); });
+    let w=0; new ResizeObserver(()=>{ const cw=$("fcChart").clientWidth; if (cw!==w){ w=cw; chart(); render(); } }).observe($("fcChart"));
+  }
+  return {init, render};
+})();
+FC.init();
+</script>
+</body>
+</html>

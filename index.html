@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hydroclimate Extremes</title>
+<meta name="description" content="Research on extreme precipitation and hydroclimate extremes in the southeastern United States.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<style>
+:root{
+  --paper:#EDF1F3; --panel:#F8FAFB; --ink:#13222D; --muted:#566670; --line:#C8D2D8;
+  --accent:#1B6A88; --mark:#AE2F66;
+  --space:#050E16; --glass:rgba(10,26,38,.72); --glass-line:rgba(160,200,220,.18); --hero-ink:#E3ECF1; --hero-muted:#9DB0BB; --hero-accent:#6CC3E0;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1A23; --panel:#13222D; --ink:#DCE5EA; --muted:#93A4AE; --line:#263A4A;
+    --accent:#5FB6D4; --mark:#E46A9F; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1A23; --panel:#13222D; --ink:#DCE5EA; --muted:#93A4AE; --line:#263A4A;
+  --accent:#5FB6D4; --mark:#E46A9F; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--hero-accent);outline-offset:2px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:max(700px,100svh);background:radial-gradient(ellipse 70% 80% at 68% 48%,#0f2738 0%,#081621 55%,var(--space) 100%);color:var(--hero-ink);overflow:hidden;isolation:isolate}
+.hero > canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#globe{cursor:grab;touch-action:pan-y;z-index:0}
+#globe.dragging{cursor:grabbing}
+#trails{pointer-events:none;z-index:1}
+.hero::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,rgba(5,14,22,.82) 0,rgba(5,14,22,.55) 400px,rgba(5,14,22,0) 560px)}
+@media (max-width:760px){.hero::after{background:linear-gradient(180deg,rgba(5,14,22,.7) 0,rgba(5,14,22,0) 220px)}}
+.nav{position:absolute;z-index:5;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px;padding-top:max(18px,env(safe-area-inset-top))}
+.brand{font:600 1.15rem/1.1 var(--serif);text-decoration:none;letter-spacing:.005em}
+.nav ul{list-style:none;display:flex;gap:22px;margin:0;padding:0;font-size:.9rem}
+.nav ul a{text-decoration:none;color:var(--hero-muted)}
+.nav ul a:hover{color:var(--hero-ink)}
+.hero-inner{position:relative;z-index:3;width:410px;max-width:100%;padding:96px 0 28px 28px;display:flex;flex-direction:column;gap:26px;pointer-events:none}
+.hero-inner > *{pointer-events:auto}
+.eyebrow{font:500 .78rem/1.2 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--hero-accent);margin:0 0 12px}
+.hero h1{font:600 clamp(2.1rem,4.2vw,3.1rem)/1.05 var(--serif);letter-spacing:-.015em;margin:0 0 14px}
+.lede{margin:0;color:#C3D2DA;font-size:1rem;max-width:30rem}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;border:1px solid var(--glass-line);background:rgba(255,255,255,.04);text-decoration:none;font-size:.9rem;cursor:pointer}
+.btn:hover{border-color:var(--hero-accent)}
+.btn.primary{background:var(--hero-accent);border-color:var(--hero-accent);color:#04131c;font-weight:600}
+.btn.primary:hover{background:#8ad3eb}
+.spacer{display:none}
+
+.panel{background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--glass-line);border-radius:12px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.panel h2{font:600 .78rem/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--hero-muted);margin:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:rgba(255,255,255,.05);border-radius:8px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 4px;border-radius:6px;font-size:.84rem;cursor:pointer;color:var(--hero-muted)}
+.seg.two,.seg.four{grid-template-columns:repeat(2,1fr)}
+.dsinfo{margin:-6px 0 0;font-size:.76rem;color:var(--hero-muted);line-height:1.35}
+.seg button[aria-pressed="true"]{background:rgba(108,195,224,.18);color:var(--hero-ink);box-shadow:inset 0 0 0 1px rgba(108,195,224,.45)}
+.row{display:flex;align-items:center;gap:10px}
+.play{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--glass-line);background:rgba(255,255,255,.05);cursor:pointer;display:grid;place-items:center;font-size:12px}
+.play:hover{border-color:var(--hero-accent)}
+.row input[type=range]{flex:1;min-width:0;accent-color:var(--hero-accent);margin:0}
+.when{font-size:.84rem;color:var(--hero-ink);font-variant-numeric:tabular-nums}
+.when span{color:var(--hero-muted)}
+.legend canvas{width:100%;height:10px;display:block;border-radius:2px}
+.legend p{margin:0 0 6px;font-size:.82rem;color:var(--hero-muted)}
+.ticks{display:flex;justify-content:space-between;font-size:.72rem;color:var(--hero-muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.switch{display:flex;align-items:center;gap:8px;font-size:.86rem;cursor:pointer;color:var(--hero-ink)}
+.switch input{accent-color:var(--hero-accent);margin:0}
+.navbtns{display:flex;gap:6px;flex-wrap:wrap}
+.navbtns .btn{padding:7px 12px;font-size:.84rem}
+.navbtns .zoom{width:34px;justify-content:center;padding:7px 0}
+
+.readout{position:absolute;z-index:4;pointer-events:none;padding:5px 9px;border-radius:5px;background:rgba(5,14,22,.85);border:1px solid var(--glass-line);font-size:.8rem;line-height:1.35;white-space:nowrap;transform:translate(14px,14px)}
+.readout[hidden]{display:none}
+.readout b{font-weight:600}
+.status{position:absolute;z-index:2;right:28px;top:76px;font-size:.8rem;color:var(--hero-muted)}
+
+.event-card{position:absolute;z-index:4;right:28px;bottom:28px;width:300px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--glass-line);border-left:3px solid #E46A9F;border-radius:10px;padding:14px 16px;transition:opacity .4s,transform .4s}
+.event-card[data-show="false"]{opacity:0;transform:translateY(10px);pointer-events:none}
+.event-card .eyebrow{color:#F08DB8;margin-bottom:6px}
+.event-card h3{font:600 1.2rem/1.2 var(--serif);margin:0 0 6px}
+.event-card p{margin:0 0 10px;font-size:.88rem;color:#C3D2DA}
+.event-card a{font-weight:600;font-size:.9rem;color:var(--hero-accent);text-decoration:none}
+.event-card a:hover{text-decoration:underline}
+.scroll-cue{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted);text-decoration:none}
+
+/* ---------- sections ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+section.block{padding:72px 0 8px}
+.block h2{font:600 clamp(1.7rem,3vw,2.2rem)/1.15 var(--serif);margin:0 0 8px;letter-spacing:-.01em}
+.block .intro{color:var(--muted);max-width:40rem;margin:0 0 28px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.card .num{font:600 .78rem/1 var(--sans);color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+.card h3{font:600 1.25rem/1.25 var(--serif);margin:10px 0 8px}
+.card p{margin:0;color:var(--muted);font-size:.94rem}
+.events{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px}
+.event{display:flex;flex-direction:column;justify-content:flex-end;min-height:240px;border-radius:10px;padding:22px;text-decoration:none;color:#E8F0F4;background:radial-gradient(circle at 70% 30%,rgba(232,98,52,.55),transparent 45%),radial-gradient(circle at 60% 40%,rgba(186,40,92,.55),transparent 30%),linear-gradient(160deg,#0f2a3d,#071520)}
+.event:hover h3{text-decoration:underline}
+.event .eyebrow{color:#F3A9C9;margin:0 0 6px}
+.event h3{font:600 1.6rem/1.15 var(--serif);margin:0 0 6px}
+.event p{margin:0;color:#C6D4DB;font-size:.94rem;max-width:30rem}
+.event.soon{background:var(--panel);color:var(--muted);border:1px dashed var(--line);justify-content:center}
+.event.soon h3{color:var(--ink);font-size:1.25rem}
+.event.soon .eyebrow{color:var(--muted)}
+.pubs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.pubs li{padding:16px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:4rem minmax(0,1fr);gap:16px}
+.pubs .yr{font:600 .95rem var(--sans);color:var(--muted)}
+.pubs .t{font:600 1.08rem/1.35 var(--serif);margin:0 0 3px}
+.pubs .m{margin:0;font-size:.9rem;color:var(--muted)}
+.pubs .links{margin-top:6px;display:flex;gap:14px;font-size:.85rem}
+.pubs .links a{color:var(--accent);text-decoration:none}
+.about{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:36px;align-items:start}
+.about p{margin:0 0 14px;max-width:38rem}
+.contact{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.contact a{color:var(--accent);text-decoration:none}
+.placeholder{font-size:.8rem;color:var(--mark);margin:0 0 18px}
+footer{margin:72px 0 0;padding:20px 0 40px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+
+@media (max-width:900px){
+  .nav ul{display:none}
+  .cards,.events,.about{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .nav{padding:14px 16px}
+  .hero-inner{width:100%;padding:68px 16px 24px;gap:0}
+  .hero h1{font-size:2rem}
+  .spacer{display:block;height:min(92vw,440px)}
+  .cta{margin-top:14px}
+  .event-card{position:relative;left:auto;right:auto;bottom:auto;width:auto;margin:0 16px 32px}
+  .event-card[data-show="false"]{display:none}
+  .scroll-cue{display:none}
+  .status{right:16px;top:60px}
+  .wrap{padding:0 16px}
+  section.block{padding-top:56px}
+}
+</style>
+<script>
+// Pages here load data files, which browsers block for pages opened straight from disk (file://)
+if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
+  const page = location.pathname.split("/").pop() || "index.html", d = document.createElement("div");
+  d.setAttribute("role", "alert");
+  d.style.cssText = "position:sticky;top:0;z-index:100;padding:12px 16px;background:#7a1f3d;color:#fff;font:500 14px/1.45 system-ui,sans-serif";
+  d.innerHTML = `This page was opened as a file, so its data cannot load and the maps and buttons will not work. Open it through a local web server instead: in the project folder run <code style="background:rgba(255,255,255,.18);padding:1px 5px;border-radius:3px">python3 -m http.server 8765</code>, then go to <a style="color:#fff" href="http://localhost:8765/${page}">http://localhost:8765/${page}</a>.`;
+  document.body.prepend(d);
+});
+</script>
+</head>
+<body>
+
+<section class="hero" id="top" aria-label="Interactive globe">
+  <canvas id="globe" tabindex="0" aria-label="Globe showing forecast or reanalysis fields. Drag to rotate; use arrow keys to rotate and plus or minus to zoom."></canvas>
+  <canvas id="trails" aria-hidden="true"></canvas>
+
+  <nav class="nav" aria-label="Main">
+    <!-- Replace with your name -->
+    <a class="brand" href="#top">Your Name</a>
+    <ul>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#events">Event replays</a></li>
+      <li><a href="#publications">Publications</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="hero-inner" id="heroInner">
+    <div class="copy">
+      <p class="eyebrow">PhD research · Hydroclimate extremes</p>
+      <h1>Following the water behind extreme rain</h1>
+      <p class="lede">I study what drives extreme precipitation in the southeastern United States: where the moisture comes from, which storms deliver it, and how the risk is changing. <span id="ledeData">The globe shows the latest ECMWF ensemble forecast: the chance of extreme rain anywhere on Earth over the next five days.</span></p>
+      <div class="cta">
+        <button class="btn primary" id="ctaFly" type="button">Fly to the Southeast</button>
+        <a class="btn" href="#research">Read about my research</a>
+      </div>
+    </div>
+
+    <div class="spacer" id="spacer" aria-hidden="true"></div>
+
+    <div class="panel" role="group" aria-label="Globe controls">
+      <div class="seg two" id="datasets" role="group" aria-label="Data shown"></div>
+      <p class="dsinfo" id="dsInfo"></p>
+      <div class="seg" id="layers" role="group" aria-label="Map layer"></div>
+      <div class="row">
+        <button class="play" id="play" type="button" aria-label="Play">▶</button>
+        <input type="range" id="time" min="0" max="1" step="0.01" value="0" aria-label="Time">
+      </div>
+      <div class="when" id="when" aria-live="polite"></div>
+      <div class="legend">
+        <p id="lgName"></p>
+        <canvas id="cbar" width="256" height="1"></canvas>
+        <div class="ticks" id="lgTicks"></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="flow" checked> <span id="flowLabel">Moving lines</span></label>
+      <div class="navbtns">
+        <button class="btn" id="goSE" type="button">Southeast US</button>
+        <button class="btn" id="goGlobe" type="button">Whole globe</button>
+        <button class="btn zoom" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button class="btn zoom" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="readout" id="readout" hidden></div>
+  <p class="status" id="status">Loading data…</p>
+
+  <aside class="event-card" id="eventCard" data-show="false" aria-live="polite">
+    <p class="eyebrow">Event replay</p>
+    <h3>Hurricane Helene</h3>
+    <p>23–29 September 2024. ERA5 puts 369 mm (14.5 in) of rain at Asheville, NC, most of it in two days. Step through the winds, moisture and rain hour by hour.</p>
+    <a href="helene_viewer.html">Open the replay →</a>
+  </aside>
+
+  <a class="scroll-cue" href="#research">Scroll ↓</a>
+</section>
+
+<main class="wrap">
+  <!-- Draft text below: replace with your own research themes, papers and bio -->
+  <section class="block" id="research">
+    <h2>Research</h2>
+    <p class="intro">Extreme rain comes from a chain of ingredients: a moisture supply, a storm that lifts the air, and the land the water falls on. My work follows that chain.</p>
+    <p class="placeholder">Draft themes. Replace with your own.</p>
+    <div class="cards">
+      <article class="card">
+        <span class="num">Theme 1</span>
+        <h3>What makes rain extreme</h3>
+        <p>Separating the roles of moisture supply, lift, and storm organization in the heaviest daily and hourly rainfall.</p>
+      </article>
+      <article class="card">
+        <span class="num">Theme 2</span>
+        <h3>The storms that deliver it</h3>
+        <p>How tropical cyclones, atmospheric rivers, fronts and thunderstorm complexes each contribute to extremes in the Southeast.</p>
+      </article>
+      <article class="card">
+        <span class="num">Theme 3</span>
+        <h3>A changing risk</h3>
+        <p>Trends in extreme precipitation and what return levels may look like in a warmer climate.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="block" id="events">
+    <h2>Event replays</h2>
+    <p class="intro">Interactive reconstructions of high-impact events from reanalysis data. Press play, switch layers, and chart the rain at any point.</p>
+    <div class="events">
+      <a class="event" href="helene_viewer.html">
+        <p class="eyebrow">September 2024</p>
+        <h3>Hurricane Helene</h3>
+        <p>A landfalling major hurricane, a rain event ahead of it, and a cutoff low combined to cause catastrophic flooding in the southern Appalachians.</p>
+      </a>
+      <a class="event soon" href="before_helene.html">
+        <p class="eyebrow">Helene · 8–26 September 2024</p>
+        <h3>Before Helene</h3>
+        <p>The weeks leading up to landfall: which ingredients were already unusual against 34 years of ERA5, and how early.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="block" id="publications">
+    <h2>Publications</h2>
+    <p class="placeholder">Placeholder entries. Replace with your papers.</p>
+    <ul class="pubs">
+      <li><span class="yr">2026</span><div><p class="t">Title of your paper on extreme precipitation in the southeastern United States</p><p class="m">You, Coauthor, and Advisor. <i>Journal Name</i>, in review.</p><div class="links"><a href="#">PDF</a><a href="#">Code</a></div></div></li>
+      <li><span class="yr">2025</span><div><p class="t">Title of an earlier paper</p><p class="m">You and Coauthor. <i>Journal Name</i>, 00, 000–000.</p><div class="links"><a href="#">DOI</a><a href="#">PDF</a><a href="#">Data</a></div></div></li>
+    </ul>
+  </section>
+
+  <section class="block" id="about">
+    <h2>About</h2>
+    <div class="about">
+      <div>
+        <p class="placeholder">Placeholder bio. Replace with your own.</p>
+        <p>I am a PhD candidate studying hydroclimate extremes, with a focus on extreme precipitation in the southeastern United States. I work with reanalysis, observations and climate model output to understand the processes behind the heaviest rain.</p>
+        <p>Before graduate school I … (your background here).</p>
+      </div>
+      <ul class="contact">
+        <li><a href="#">Email</a></li>
+        <li><a href="#">Google Scholar</a></li>
+        <li><a href="#">GitHub</a></li>
+        <li><a href="#">CV (PDF)</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer id="footer">Globe data: ECMWF ensemble forecasts (ECMWF open data, CC BY 4.0) and ERA5 reanalysis (Copernicus Climate Change Service). Coastlines and borders: Natural Earth via world-atlas and us-atlas.</footer>
+</main>
+
+<script>
+const GEO_CDN = "https://cdn.jsdelivr.net/npm/";
+const SE = {lam:-84, phi:31, z:2.4};
+const ASHEVILLE = [-82.55, 35.6];
+const DEG = 180/Math.PI, RAD = Math.PI/180;
+
+/* Two datasets share the globe: the latest ECMWF ensemble outlook (prepare_now.py) and Helene in ERA5 (prepare_globe.py) */
+const DATASETS = {
+  now: {label:"Next 5 days", dir:"data/now/", flow:["u850","v850"], flowK:0.012, flowMin:9,
+    flowLabel:"Moving lines: 850 hPa wind, one ensemble member", defaultLayer:"p72", calibratedLayer:"plocal",  // the locally extreme layer leads once it is calibrated to the model climate
+    lede:"The globe shows the latest ECMWF ensemble forecast: where the next five days could bring extreme rain, as a chance from 50 forecasts.",
+    layers:{
+      plocal:{label:"Locally extreme", name:"Chance of 3-day rain above the local 1-in-100 level", unit:"", cmap:"prob", range:[0,1], needs:["plocal","q99","base"], pct:true, still:true, local:true},
+      p72: {label:"3-day extreme", name:"Chance of at least 100 mm in any 3 days", unit:"", cmap:"prob", range:[0,1], needs:["p72"], pct:true, still:true},
+      p24: {label:"Daily extreme", name:"Chance of at least 50 mm in the 24 hours", unit:"", cmap:"prob", range:[0,1], needs:["p24"], pct:true},
+      rain:{label:"Rain (mean)", name:"Ensemble-mean rain in the 24 hours", unit:"mm", cmap:"rain", range:[0,100], needs:["rain24"], inches:true}
+    }},
+  helene: {label:"Helene 2024", dir:"data/globe/", flow:["ivtu","ivtv"], flowK:0.00035, flowMin:900,
+    flowLabel:"Moving lines show vapor transport", defaultLayer:"ivt", start:"2024-09-27T00:00",
+    lede:"Switch back to the forecast any time; this view replays the week of Hurricane Helene, September 2024, in ERA5.",
+    layers:{
+      ivt: {label:"Vapor transport", name:"Integrated vapor transport", unit:"kg m⁻¹ s⁻¹", cmap:"ivt", range:[0,2000], needs:["ivtu","ivtv"]},
+      pw:  {label:"Moisture", name:"Precipitable water", unit:"mm", cmap:"pw", range:[10,75], needs:["pw"]},
+      rain:{label:"Rain", name:"Rain in the past 6 hours", unit:"mm", cmap:"rain", range:[0,50], needs:["rain6"], inches:true}
+    }}
+};
+let DS = DATASETS.now, LAYERS = DS.layers;
+/* colour maps shared with helene_viewer.html: [fraction, [r,g,b,alpha]] */
+const CMAPS = {
+  rain:[[0,[120,170,230,0]],[0.012,[120,170,230,0]],[0.03,[110,165,230,.55]],[0.12,[45,110,215,.8]],[0.3,[50,180,120,.9]],[0.5,[245,215,60,.95]],[0.7,[240,110,40,1]],[0.87,[205,30,90,1]],[1,[245,170,245,1]]],
+  pw:[[0,[125,95,62,.7]],[0.3,[196,176,118,.75]],[0.55,[88,165,138,.8]],[0.75,[42,118,188,.85]],[0.9,[62,62,170,.9]],[1,[190,82,200,.95]]],
+  ivt:[[0,[0,0,0,0]],[0.11,[0,0,0,0]],[0.13,[248,228,120,.55]],[0.3,[248,178,62,.8]],[0.5,[232,98,52,.9]],[0.72,[186,40,92,.95]],[1,[120,42,165,1]]],
+  prob:[[0,[0,0,0,0]],[0.04,[0,0,0,0]],[0.06,[150,200,240,.55]],[0.25,[90,150,230,.8]],[0.5,[150,90,220,.9]],[0.75,[220,60,150,.95]],[1,[255,190,120,1]]]
+};
+const LUT = {};
+for (const [k, stops] of Object.entries(CMAPS)) {
+  const a = new Uint8ClampedArray(256*4);
+  for (let i=0;i<256;i++){
+    const f=i/255; let j=0; while (j<stops.length-2 && f>stops[j+1][0]) j++;
+    const [f0,c0]=stops[j],[f1,c1]=stops[j+1]; const w=Math.min(1,Math.max(0,(f-f0)/(f1-f0||1)));
+    for (let c=0;c<3;c++) a[i*4+c]=c0[c]+(c1[c]-c0[c])*w;
+    a[i*4+3]=255*(c0[3]+(c1[3]-c0[3])*w);
+  }
+  LUT[k]=a;
+}
+
+const $ = id => document.getElementById(id);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const S = { ds:"now", metas:{}, meta:null, raw:{}, layer:"p72", flow:!reduceMotion, t:0, playing:false,
+  lam:-72, phi:22, z:1, auto:!reduceMotion, dragging:false, fly:null, dirty:true, hover:null };
+const GEO = {};
+
+/* ---------- layout ---------- */
+const V = {W:0,H:0,dpr:1,cx:0,cy:0,R0:1,R:1,sp:0,cp:1,ds:2,bw:0,bh:0};
+const cv=$("globe"), ctx=cv.getContext("2d"), tcv=$("trails"), tctx=tcv.getContext("2d");
+const buf=document.createElement("canvas"), bctx=buf.getContext("2d");
+let bufImg=null, stars=[];
+function layout(){
+  const hero=$("top").getBoundingClientRect(), d=V.dpr=Math.min(2,window.devicePixelRatio||1);
+  if (hero.width<1||hero.height<1) return;  // hidden or not laid out yet; the ResizeObserver calls again
+  V.W=Math.round(hero.width*d); V.H=Math.round(hero.height*d);
+  for (const c of [cv,tcv]){ c.width=V.W; c.height=V.H; }
+  if (hero.width<=760){
+    const s=$("spacer").getBoundingClientRect();
+    V.cx=V.W/2; V.cy=(s.top-hero.top+s.height/2)*d; V.R0=Math.min(hero.width/2-16, s.height/2-8)*d;
+  } else {
+    const left=$("heroInner").getBoundingClientRect().right-hero.left;
+    const w=hero.width-left;
+    V.cx=(left+w/2)*d; V.cy=(hero.height/2+20)*d; V.R0=Math.min(w/2-36, hero.height/2-70)*d;
+  }
+  V.ds=Math.max(1, Math.sqrt(V.W*V.H/170000));
+  V.bw=Math.ceil(V.W/V.ds); V.bh=Math.ceil(V.H/V.ds);
+  buf.width=V.bw; buf.height=V.bh; bufImg=bctx.createImageData(V.bw,V.bh);
+  stars=Array.from({length:Math.round(V.W*V.H/(9000*d*d))},()=>[Math.random()*V.W,Math.random()*V.H,Math.random()*0.5+0.15]);
+  S.dirty=true; S.fieldKey=""; tctx.clearRect(0,0,V.W,V.H);
+}
+
+/* ---------- projection (orthographic, written out for speed) ---------- */
+function setView(){
+  V.R=V.R0*S.z; V.sp=Math.sin(S.phi*RAD); V.cp=Math.cos(S.phi*RAD);
+  proj.rotate([-S.lam,-S.phi]).scale(V.R).translate([V.cx,V.cy]);
+}
+function fwd(lon,lat){
+  const l=(lon-S.lam)*RAD, p=lat*RAD, cl=Math.cos(p), cosl=Math.cos(l);
+  if (V.sp*Math.sin(p)+V.cp*cl*cosl<=0) return null;
+  return [V.cx+V.R*cl*Math.sin(l), V.cy-V.R*(V.cp*Math.sin(p)-V.sp*cl*cosl)];
+}
+function inv(xs,ys){
+  const x=xs-V.cx, y=V.cy-ys, rho=Math.hypot(x,y);
+  if (rho>=V.R) return null; if (rho<1e-9) return [S.lam,S.phi];
+  const sc=rho/V.R, cc=Math.sqrt(1-sc*sc);
+  return [S.lam+Math.atan2(x*sc, rho*cc*V.cp-y*sc*V.sp)*DEG, Math.asin(cc*V.sp+y*sc*V.cp/rho)*DEG];
+}
+const proj=d3.geoOrthographic().clipAngle(90).precision(0.4);
+const path=d3.geoPath(proj, ctx);
+const graticule=d3.geoGraticule10();
+
+/* ---------- data ---------- */
+let NLON=360, NLAT=181, NCELL=NLON*NLAT, GD=1;  // grid size and spacing (degrees), set from each dataset's meta.json
+const NT=()=>S.meta.times.length;
+const PENDING={};  // in-flight downloads, so two callers asking for the same layer share one request
+function loadLayer(name){
+  const key=S.ds+"/"+name, ds=S.ds, meta=S.meta;
+  if (S.raw[key]) return Promise.resolve(S.raw[key]);
+  return PENDING[key] ||= (async()=>{
+    const L=meta.layers[name], r=await fetch(DATASETS[ds].dir+L.file);
+    if (!r.ok){ delete PENDING[key]; throw new Error(name); }
+    return S.raw[key]={q:new Uint8Array(await r.arrayBuffer()), a:L.vmin, s:(L.vmax-L.vmin)/254, frames:L.frames||meta.times.length};
+  })();
+}
+const raw=name=>S.raw[S.ds+"/"+name];
+const STILL={};  // decoded single-frame layers (thresholds and base rates), per dataset
+function still(name){ const key=S.ds+"/"+name; if (!STILL[key]||STILL[key].length!==NCELL) STILL[key]=frameArr(name,new Float32Array(NCELL)); return STILL[key]; }
+function frameArr(name, out){
+  // linear interpolation between the two frames around S.t (a single-frame layer is the same at every time)
+  const L=raw(name), n=L.frames, k0=Math.min(n-1,Math.floor(S.t)), k1=Math.min(n-1,k0+1), f=n>1?S.t-k0:0;
+  const q=L.q, o0=k0*NCELL, o1=k1*NCELL;
+  for (let i=0;i<NCELL;i++){
+    const a=q[o0+i], b=q[o1+i];
+    out[i]= a===255||b===255 ? NaN : L.a+L.s*(a+(b-a)*f);
+  }
+  return out;
+}
+let FIELD=new Float32Array(NCELL), U=new Float32Array(NCELL), Vv=new Float32Array(NCELL);
+S.fieldKey=""; S.flowKey="";
+function ensureField(){
+  const L=LAYERS[S.layer], key=S.layer+S.t;
+  if (!S.meta || !L.needs.every(n=>raw(n))) return false;
+  if (S.fieldKey===key) return true;
+  if (S.layer==="ivt"){ ensureFlow(); for (let i=0;i<NCELL;i++) FIELD[i]=Math.hypot(U[i],Vv[i]); }
+  else frameArr(L.needs[0], FIELD);
+  S.fieldKey=key; return true;
+}
+function ensureFlow(){
+  const [fu,fv]=DS.flow;
+  if (!S.meta || !raw(fu) || !raw(fv)) return false;
+  if (S.flowKey!==String(S.t)){ frameArr(fu,U); frameArr(fv,Vv); S.flowKey=String(S.t); }
+  return true;
+}
+function sample(arr, lon, lat){
+  let gx=(lon+180)/GD; gx-=NLON*Math.floor(gx/NLON);
+  const gy=Math.min(NLAT-1.0001,Math.max(0,(90-lat)/GD));
+  const c0=gx|0, c1=c0===NLON-1?0:c0+1, r0=gy|0, fx=gx-c0, fy=gy-r0, i0=r0*NLON, i1=i0+NLON;
+  return (arr[i0+c0]*(1-fx)+arr[i0+c1]*fx)*(1-fy)+(arr[i1+c0]*(1-fx)+arr[i1+c1]*fx)*fy;
+}
+
+/* ---------- drawing ---------- */
+function renderField(){
+  const img=bufImg.data; img.fill(0);
+  if (!ensureField()) { bctx.putImageData(bufImg,0,0); return; }
+  const L=LAYERS[S.layer], lut=LUT[L.cmap], v0=L.range[0], sc=255/(L.range[1]-L.range[0]);
+  const {cx,cy,R,sp,cp,ds,bw,bh}=V, R2=R*R, lam=S.lam;
+  for (let j=0;j<bh;j++){
+    const y=cy-(j+0.5)*ds;
+    if (Math.abs(y)>=R) continue;
+    for (let i=0;i<bw;i++){
+      const x=(i+0.5)*ds-cx, r2=x*x+y*y;
+      if (r2>=R2) continue;
+      const rho=Math.sqrt(r2), s=rho/R, c=Math.sqrt(1-s*s);
+      const lat=rho<1e-9?S.phi:Math.asin(c*sp+y*s*cp/rho)*DEG;
+      const lon=lam+Math.atan2(x*s, rho*c*cp-y*s*sp)*DEG;
+      const v=sample(FIELD,lon,lat);
+      if (v!==v) continue;
+      let q=(v-v0)*sc; q=q<0?0:q>255?255:q|0; q*=4;
+      const o=(j*bw+i)*4; img[o]=lut[q]; img[o+1]=lut[q+1]; img[o+2]=lut[q+2]; img[o+3]=lut[q+3];
+    }
+  }
+  bctx.putImageData(bufImg,0,0);
+}
+function draw(){
+  if (!bufImg) return;
+  setView(); renderField();
+  const {W,H,cx,cy,R,dpr}=V;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#cfe3ee";
+  for (const [x,y,a] of stars){ if (Math.hypot(x-cx,y-cy)>R*1.04){ ctx.globalAlpha=a; ctx.fillRect(x,y,dpr,dpr);} }
+  ctx.globalAlpha=1;
+  // atmosphere glow
+  let g=ctx.createRadialGradient(cx,cy,R*0.98,cx,cy,R*1.18);
+  g.addColorStop(0,"rgba(110,190,235,.32)"); g.addColorStop(1,"rgba(110,190,235,0)");
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R*1.18,0,2*Math.PI); ctx.fill();
+  // ocean with a soft light source at upper left
+  g=ctx.createRadialGradient(cx-R*0.4,cy-R*0.45,R*0.05,cx,cy,R);
+  g.addColorStop(0,"#1b4863"); g.addColorStop(1,"#0a1d2b");
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.fill();
+  if (GEO.land){ ctx.beginPath(); path(GEO.land); ctx.fillStyle="#2a4350"; ctx.fill(); }
+  // data layer
+  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.clip();
+  ctx.imageSmoothingEnabled=true; ctx.drawImage(buf,0,0,V.bw,V.bh,0,0,V.bw*V.ds,V.bh*V.ds);
+  ctx.restore();
+  ctx.lineJoin="round";
+  ctx.beginPath(); path(graticule); ctx.strokeStyle="rgba(220,235,245,.07)"; ctx.lineWidth=dpr*0.8; ctx.stroke();
+  if (GEO.states && S.z>1.4){ ctx.beginPath(); path(GEO.states); ctx.strokeStyle="rgba(225,236,242,.3)"; ctx.lineWidth=dpr*0.7; ctx.stroke(); }
+  if (GEO.borders){ ctx.beginPath(); path(GEO.borders); ctx.strokeStyle="rgba(225,236,242,.4)"; ctx.lineWidth=dpr*0.8; ctx.stroke(); }
+  if (GEO.land){ ctx.beginPath(); path(GEO.land); ctx.strokeStyle="rgba(235,243,247,.72)"; ctx.lineWidth=dpr*0.9; ctx.stroke(); }
+  // limb darkening for depth
+  g=ctx.createRadialGradient(cx,cy,R*0.55,cx,cy,R);
+  g.addColorStop(0,"rgba(3,10,16,0)"); g.addColorStop(1,"rgba(3,10,16,.5)");
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.fill();
+  // Asheville marker when zoomed in
+  const a=S.ds==="helene"&&S.z>1.4&&fwd(...ASHEVILLE);
+  if (a){
+    ctx.beginPath(); ctx.arc(a[0],a[1],4.5*dpr,0,2*Math.PI); ctx.lineWidth=2.5*dpr; ctx.strokeStyle="#081620"; ctx.stroke();
+    ctx.lineWidth=1.5*dpr; ctx.strokeStyle="#fff"; ctx.stroke();
+    ctx.font=`500 ${12*dpr}px "IBM Plex Sans", sans-serif`; ctx.textBaseline="middle";
+    ctx.lineWidth=3*dpr; ctx.strokeStyle="rgba(5,14,22,.85)"; ctx.strokeText("Asheville",a[0]+9*dpr,a[1]);
+    ctx.fillStyle="#fff"; ctx.fillText("Asheville",a[0]+9*dpr,a[1]);
+  }
+  // show the event card when the Southeast fills the view
+  const near=S.ds==="helene" && d3.geoDistance([S.lam,S.phi],[SE.lam,SE.phi])*DEG<14 && S.z>1.4;
+  $("eventCard").dataset.show=String(near);
+}
+
+/* ---------- moving lines ---------- */
+let parts=[];
+function targetCount(){ const area=Math.min(Math.PI*V.R*V.R, V.W*V.H); return Math.max(400,Math.min(3200,Math.round(area/(110*V.dpr*V.dpr)))); }
+function spawn(p){
+  for (let k=0;k<10;k++){
+    const ll=inv(Math.random()*V.W, Math.random()*V.H);
+    if (ll && Math.abs(ll[1])<85){ p.lon=ll[0]; p.lat=ll[1]; break; }
+  }
+  p.age=40+Math.random()*60; return p;
+}
+function stepFlow(){
+  if (!bufImg) return;
+  if (!S.flow || !ensureFlow()){ tctx.clearRect(0,0,V.W,V.H); return; }
+  const n=targetCount();
+  if (Math.abs(parts.length-n)>n*0.2) parts=Array.from({length:n},()=>spawn({}));
+  if (S.dragging || S.fly) tctx.clearRect(0,0,V.W,V.H);
+  else { tctx.globalCompositeOperation="destination-in"; tctx.fillStyle="rgba(0,0,0,.9)"; tctx.fillRect(0,0,V.W,V.H); tctx.globalCompositeOperation="source-over"; }
+  const k=DS.flowK/S.z, minSq=DS.flowMin;
+  tctx.beginPath();
+  for (const p of parts){
+    if (--p.age<0 || p.lon===undefined){ spawn(p); continue; }
+    const u=sample(U,p.lon,p.lat), v=sample(Vv,p.lon,p.lat);
+    if (u!==u || v!==v){ spawn(p); continue; }
+    const a=fwd(p.lon,p.lat), nlat=p.lat+v*k, nlon=p.lon+u*k/Math.max(0.15,Math.cos(p.lat*RAD));
+    const b=Math.abs(nlat)<85 && fwd(nlon,nlat);
+    if (!a||!b){ spawn(p); continue; }
+    if (u*u+v*v>minSq){ tctx.moveTo(a[0],a[1]); tctx.lineTo(b[0],b[1]); }
+    p.lon=nlon; p.lat=nlat;
+  }
+  tctx.strokeStyle="rgba(240,248,252,.72)"; tctx.lineWidth=0.9*V.dpr; tctx.stroke();
+}
+
+/* ---------- controls ---------- */
+const fmtDay=d=>d.toLocaleString("en-US",{timeZone:"UTC",weekday:"short",day:"numeric",month:"short"});
+const fmtTime=i=>{ const d=new Date(S.meta.times[i]+"Z"), hh=String(d.getUTCHours()).padStart(2,"0");
+  if (S.ds==="now"){
+    if (LAYERS[S.layer].still) return `Next 5 days <span>· whole period; lines show day ${i+1}</span>`;
+    return `Day ${i+1}: 24 h to ${fmtDay(d)} <span>· ${hh}:00 UTC</span>`;
+  }
+  return `${fmtDay(d)} <span>· ${hh}:00 UTC</span>`; };
+function setTime(t, fromSlider){
+  S.t=Math.max(0,Math.min(NT()-1,t)); if (!fromSlider) $("time").value=S.t;
+  $("when").innerHTML=fmtTime(Math.round(S.t)); S.dirty=true; updateReadout();
+}
+function play(){ S.playing=true; $("play").textContent="❚❚"; $("play").setAttribute("aria-label","Pause"); }
+function pause(){ S.playing=false; $("play").textContent="▶"; $("play").setAttribute("aria-label","Play"); }
+async function setLayer(k){
+  S.layer=k;
+  document.querySelectorAll("#layers button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===k)));
+  drawLegend(); S.dirty=true;
+  if (S.meta){ $("when").innerHTML=fmtTime(Math.round(S.t)); try { await Promise.all(LAYERS[k].needs.map(loadLayer)); } catch(e){} S.dirty=true; updateReadout(); }
+}
+function drawLegend(){
+  const L=LAYERS[S.layer], c=$("cbar").getContext("2d"), img=c.createImageData(256,1), lut=LUT[L.cmap];
+  for (let i=0;i<256;i++){ const a=lut[i*4+3]/255; img.data[i*4]=lut[i*4]*a+16*(1-a); img.data[i*4+1]=lut[i*4+1]*a+34*(1-a); img.data[i*4+2]=lut[i*4+2]*a+46*(1-a); img.data[i*4+3]=255; }
+  c.putImageData(img,0,0);
+  $("lgName").textContent=L.unit?`${L.name}, ${L.unit}`:L.name;
+  const [v0,v1]=L.range; $("lgTicks").innerHTML=[0,.25,.5,.75,1].map(f=>{ const v=v0+f*(v1-v0); return `<span>${L.pct?Math.round(v*100)+"%":Math.round(v).toLocaleString("en-US")}</span>`; }).join("");
+}
+function flyTo(lam,phi,z,then){
+  let tl=lam; while (tl-S.lam>180) tl-=360; while (tl-S.lam<-180) tl+=360;
+  S.auto=false;
+  S.fly={t0:performance.now(), d:reduceMotion?1:1900, from:{lam:S.lam,phi:S.phi,z:S.z}, to:{lam:tl,phi,z}, then};
+}
+function zoomBy(f){ S.z=Math.max(0.7,Math.min(10,S.z*f)); S.auto=false; S.dirty=true; tctx.clearRect(0,0,V.W,V.H); loadDetail(); }
+function updateReadout(){
+  const el=$("readout");
+  if (!S.hover){ el.hidden=true; return; }
+  const ll=inv(S.hover.x*V.dpr,S.hover.y*V.dpr);
+  if (!ll){ el.hidden=true; return; }
+  let lon=((ll[0]+180)%360+360)%360-180, lat=ll[1];
+  const loc=`${Math.abs(lat).toFixed(1)}°${lat>=0?"N":"S"}, ${Math.abs(lon).toFixed(1)}°${lon<0?"W":"E"}`;
+  let txt=loc;
+  if (ensureField()){
+    const v=sample(FIELD,lon,lat), L=LAYERS[S.layer];
+    if (v===v){ const val=L.pct?`${Math.round(v*100)}% chance`:`${v>=100?Math.round(v).toLocaleString("en-US"):v.toFixed(1)} ${L.unit}${L.inches?` (${(v/25.4).toFixed(1)} in)`:""}`;
+      let extra="";
+      if (L.local){
+        const q=sample(still("q99"),lon,lat), b=sample(still("base"),lon,lat), r=v/Math.max(b,1/930);
+        extra=`<br>Usually ${b<0.0095?(b*100).toFixed(1):Math.round(b*100)}%${v>=0.05&&r>=1.5?` · <b>${r>=10?Math.round(r):r.toFixed(1)}× the usual chance</b>`:""}`
+             +`<br>Local 1-in-100: ${Math.round(q)} mm in 3 days (${(q/25.4).toFixed(1)} in)`;
+      }
+      txt=`<b>${L.label}</b> ${val}${extra}<br>${loc}`; }
+  }
+  el.innerHTML=txt; el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false;
+}
+let detailLoading=false;
+async function loadDetail(){
+  if (detailLoading || S.z<1.4) return; detailLoading=true;
+  try {
+    const [land, us]=await Promise.all([fetch(GEO_CDN+"world-atlas@2.0.2/land-50m.json").then(r=>r.json()), fetch(GEO_CDN+"us-atlas@3.0.1/states-10m.json").then(r=>r.json())]);
+    GEO.land=topojson.feature(land, land.objects.land);
+    GEO.states=topojson.mesh(us, us.objects.states, (a,b)=>a!==b);
+    S.dirty=true;
+  } catch(e){ detailLoading=false; }
+}
+
+/* ---------- interaction ---------- */
+const pointers=new Map(); let drag0=null, pinch0=null;
+cv.addEventListener("pointerdown",e=>{
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  cv.setPointerCapture(e.pointerId);
+  S.auto=false; S.fly=null;
+  if (pointers.size===1){ drag0={x:e.clientX,y:e.clientY,lam:S.lam,phi:S.phi}; }
+  if (pointers.size===2){ const [a,b]=[...pointers.values()]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),z:S.z}; drag0=null; }
+});
+cv.addEventListener("pointermove",e=>{
+  const r=$("top").getBoundingClientRect();
+  if (pointers.has(e.pointerId)){
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if (pinch0 && pointers.size===2){ const [a,b]=[...pointers.values()]; S.z=Math.max(0.7,Math.min(10,pinch0.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch0.d)); S.dirty=true; S.dragging=true; }
+    else if (drag0){
+      const dx=(e.clientX-drag0.x)*V.dpr, dy=(e.clientY-drag0.y)*V.dpr;
+      if (Math.hypot(dx,dy)>3*V.dpr){ S.dragging=true; cv.classList.add("dragging"); }
+      S.lam=drag0.lam-dx/V.R*DEG; S.phi=Math.max(-80,Math.min(80,drag0.phi+dy/V.R*DEG)); S.dirty=true;
+    }
+  }
+  if (e.pointerType==="mouse"){ S.hover={x:e.clientX-r.left,y:e.clientY-r.top}; updateReadout(); }
+});
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if (pointers.size<2) pinch0=null;
+  if (pointers.size===0){ drag0=null; S.dragging=false; cv.classList.remove("dragging"); loadDetail(); }
+}
+cv.addEventListener("pointerup",endPointer);
+cv.addEventListener("pointercancel",endPointer);
+cv.addEventListener("pointerleave",()=>{ S.hover=null; updateReadout(); });
+// trackpad pinch arrives as ctrl+wheel; plain wheel keeps scrolling the page
+cv.addEventListener("wheel",e=>{ if (!e.ctrlKey) return; e.preventDefault(); zoomBy(Math.exp(-e.deltaY*0.01)); },{passive:false});
+cv.addEventListener("keydown",e=>{
+  const step=8/S.z, k=e.key;
+  if (k==="ArrowLeft") S.lam-=step; else if (k==="ArrowRight") S.lam+=step;
+  else if (k==="ArrowUp") S.phi=Math.min(80,S.phi+step); else if (k==="ArrowDown") S.phi=Math.max(-80,S.phi-step);
+  else if (k==="+"||k==="=") zoomBy(1.25); else if (k==="-") zoomBy(0.8); else return;
+  e.preventDefault(); S.auto=false; S.dirty=true;
+});
+
+/* ---------- loop ---------- */
+let last=0;
+function frame(ts){
+  const dt=Math.min(0.1,(ts-last)/1000||0); last=ts;
+  if (S.fly){
+    const f=S.fly, k=Math.min(1,(ts-f.t0)/f.d), e=d3.easeCubicInOut(k);
+    S.lam=f.from.lam+(f.to.lam-f.from.lam)*e; S.phi=f.from.phi+(f.to.phi-f.from.phi)*e;
+    S.z=f.from.z*Math.pow(f.to.z/f.from.z,e); S.dirty=true;
+    if (k>=1){ S.fly=null; loadDetail(); if (f.then) f.then(); }
+  } else if (S.auto && !S.dragging){ S.lam-=dt*3.5; S.dirty=true; }
+  if (S.playing && S.meta){ let t=S.t+dt*1.6; if (t>NT()-1) t=0; setTime(t); }
+  if (S.dirty){ S.dirty=false; draw(); if (S.hover) updateReadout(); }
+  stepFlow();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- start ---------- */
+async function setDataset(key){
+  pause(); S.ds=key; DS=DATASETS[key]; LAYERS=DS.layers; S.layer=DS.defaultLayer;
+  document.querySelectorAll("#datasets button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===key)));
+  $("flowLabel").textContent=DS.flowLabel; $("ledeData").textContent=DS.lede;
+  if (!S.metas[key]){ const r=await fetch(DS.dir+"meta.json",{cache:"no-cache"}); if (!r.ok) throw new Error(key); S.metas[key]=await r.json(); }
+  if (S.ds!==key) return;  // another switch happened while loading
+  S.meta=S.metas[key];
+  // only offer layers this run actually has (the locally extreme layer needs data/climate/)
+  LAYERS=Object.fromEntries(Object.entries(DS.layers).filter(([,L])=>L.needs.every(n=>S.meta.layers[n])));
+  if (DS.calibratedLayer && S.meta.climate?.calibrated) S.layer=DS.calibratedLayer;
+  if (!LAYERS[S.layer]) S.layer=Object.keys(LAYERS)[0];
+  $("layers").innerHTML=""; $("layers").className="seg"+(Object.keys(LAYERS).length===4?" four":"");
+  for (const [k,L] of Object.entries(LAYERS)){
+    const b=document.createElement("button"); b.type="button"; b.textContent=L.label; b.dataset.k=k; b.onclick=()=>setLayer(k); $("layers").appendChild(b);
+  }
+  const g=S.meta.grid||{nlat:181,nlon:360,d:1};
+  if (g.nlat!==NLAT||g.nlon!==NLON){ NLAT=g.nlat; NLON=g.nlon; NCELL=NLAT*NLON; FIELD=new Float32Array(NCELL); U=new Float32Array(NCELL); Vv=new Float32Array(NCELL); }
+  GD=g.d; S.fieldKey=""; S.flowKey=""; parts=[]; tctx.clearRect(0,0,V.W,V.H);
+  const c=S.meta.climate;
+  $("dsInfo").textContent=key==="now"
+    ? `ECMWF ensemble, ${S.meta.members} members, run ${fmtDay(new Date(S.meta.run+"Z"))} ${S.meta.run.slice(11,13)} UTC. Chances are the share of members over the threshold.`
+      +(c?` Locally extreme: above the ERA5 ${c.years[0]}–${c.years[1]} 99th percentile of 3-day rain for that place and time of year`
+        +(c.calibrated?`, matched to the same percentile of ${c.modelRuns} past ECMWF forecasts for this season so the model's own rain bias cancels out.`
+                      :`. In the tropics the forecast model rains harder than ERA5, so chances there read high.`):"")
+    : "ERA5 reanalysis, every 6 hours, 23–29 September 2024.";
+  $("time").max=NT()-1;
+  const start=DS.start?S.meta.times.indexOf(DS.start):0; setTime(start>=0?start:0);
+  await setLayer(S.layer);
+  await Promise.all(S.flow?DS.flow.map(loadLayer):[]).catch(()=>{});
+  S.dirty=true;
+  Object.values(LAYERS).flatMap(L=>L.needs).forEach(n=>loadLayer(n).catch(()=>{}));  // the rest in the background
+}
+
+(async function init(){
+  for (const [k,D] of Object.entries(DATASETS)){
+    const b=document.createElement("button"); b.type="button"; b.textContent=D.label; b.dataset.k=k;
+    b.onclick=()=>setDataset(k).catch(()=>{ $("dsInfo").textContent=`${D.label} data not found.`; }); $("datasets").appendChild(b);
+  }
+  $("flow").checked=S.flow;
+  $("flow").onchange=e=>{ S.flow=e.target.checked; if (S.flow && S.meta) Promise.all(DS.flow.map(loadLayer)).catch(()=>{}); };
+  $("play").onclick=()=>S.playing?pause():play();
+  $("time").addEventListener("input",e=>{ pause(); setTime(+e.target.value,true); });
+  const goSE=()=>flyTo(SE.lam,SE.phi,innerWidth<=760?1.7:SE.z);
+  $("goSE").onclick=goSE; $("ctaFly").onclick=goSE;
+  $("goGlobe").onclick=()=>flyTo(S.lam,18,1,()=>{ S.auto=!reduceMotion; });
+  $("zoomIn").onclick=()=>zoomBy(1.4); $("zoomOut").onclick=()=>zoomBy(1/1.4);
+  drawLegend();
+  layout(); new ResizeObserver(layout).observe($("top"));
+  requestAnimationFrame(frame);
+
+  try {
+    const [land, countries]=await Promise.all([fetch(GEO_CDN+"world-atlas@2.0.2/land-110m.json").then(r=>r.json()), fetch(GEO_CDN+"world-atlas@2.0.2/countries-110m.json").then(r=>r.json())]);
+    if (!GEO.land) GEO.land=topojson.feature(land, land.objects.land);
+    GEO.borders=topojson.mesh(countries, countries.objects.countries, (a,b)=>a!==b);
+    S.dirty=true;
+  } catch(e){}
+
+  // open on the live outlook; fall back to Helene if data/now has not been built
+  try { await setDataset("now"); $("status").remove(); }
+  catch(e){
+    try { await setDataset("helene"); $("status").remove(); }
+    catch(e2){ $("status").textContent="Globe data not found. Run prepare_now.py or prepare_globe.py."; }
+  }
+})();
+</script>
+</body>
+</html>
