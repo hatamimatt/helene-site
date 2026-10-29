@@ -1,0 +1,30 @@
+{
+ "created": "2026-10-29",
+ "states": [
+  "AL",
+  "FL",
+  "GA",
+  "MS",
+  "NC",
+  "SC",
+  "TN"
+ ],
+ "lineClassesKv": {
+  "345": 345,
+  "230": 230,
+  "115": 115
+ },
+ "minPlantMw": 5,
+ "eiaMonth": "September 2026",
+ "counts": {
+  "lines": {
+   "345": 1256,
+   "230": 10857,
+   "115": 17148
+  },
+  "plants": 1379,
+  "substations": 7751,
+  "datacenters": 167
+ },
+ "source": "OpenStreetMap contributors (ODbL) via Overpass API; EIA-860M (US Energy Information Administration)"
+}

@@ -96,6 +96,17 @@ button{font:inherit;color:inherit}
 .event-card p{margin:0 0 10px;font-size:.88rem;color:#C3D2DA}
 .event-card a{font-weight:600;font-size:.9rem;color:var(--hero-accent);text-decoration:none}
 .event-card a:hover{text-decoration:underline}
+.gridkey{display:flex;flex-wrap:wrap;gap:4px 12px;margin:-6px 0 0;font-size:.74rem;color:var(--hero-muted)}
+.gridkey[hidden]{display:none}
+.gridkey i{display:inline-block;vertical-align:middle;margin-right:5px}
+.gridkey .ln{width:16px;border-top:2px solid #f3e3a1}
+.gridkey .dot{width:8px;height:8px;border-radius:50%;border:1px solid #081620}
+.event-card.grid{border-left-color:#f3e3a1}
+.event-card.grid .eyebrow{color:#f3e3a1}
+.event-card ul{list-style:none;margin:0 0 10px;padding:0;font-size:.84rem;color:#C3D2DA;display:flex;flex-direction:column;gap:3px}
+.event-card ul b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+.event-card ol{margin:0;padding:0 0 0 18px;font-size:.8rem;color:#C3D2DA;display:flex;flex-direction:column;gap:2px}
+.event-card .small{font-size:.74rem;color:var(--hero-muted);margin:8px 0 0}
 .scroll-cue{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted);text-decoration:none}
 
 /* ---------- sections ---------- */
@@ -205,6 +216,8 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
         <div class="ticks" id="lgTicks"></div>
       </div>
       <label class="switch"><input type="checkbox" id="flow" checked> <span id="flowLabel">Moving lines</span></label>
+      <label class="switch"><input type="checkbox" id="grid" checked> <span>Power grid, 7 Southeast states</span></label>
+      <div class="gridkey" id="gridKey" hidden></div>
       <div class="navbtns">
         <button class="btn" id="goSE" type="button">Southeast US</button>
         <button class="btn" id="goGlobe" type="button">Whole globe</button>
@@ -222,6 +235,12 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
     <h3>Hurricane Helene</h3>
     <p>23–29 September 2024. ERA5 puts 369 mm (14.5 in) of rain at Asheville, NC, most of it in two days. Step through the winds, moisture and rain hour by hour.</p>
     <a href="helene_viewer.html">Open the replay →</a>
+  </aside>
+
+  <aside class="event-card grid" id="gridCard" data-show="false" aria-live="polite">
+    <p class="eyebrow">Grid exposure · next 5 days</p>
+    <h3>Power assets under extreme rain risk</h3>
+    <div id="gridSummary"><p>Loading the grid…</p></div>
   </aside>
 
   <a class="scroll-cue" href="#research">Scroll ↓</a>
@@ -295,7 +314,7 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
     </div>
   </section>
 
-  <footer id="footer">Globe data: ECMWF ensemble forecasts (ECMWF open data, CC BY 4.0) and ERA5 reanalysis (Copernicus Climate Change Service). Coastlines and borders: Natural Earth via world-atlas and us-atlas.</footer>
+  <footer id="footer">Globe data: ECMWF ensemble forecasts (ECMWF open data, CC BY 4.0) and ERA5 reanalysis (Copernicus Climate Change Service). Coastlines and borders: Natural Earth via world-atlas and us-atlas. Power grid: transmission lines, substations and data centres © OpenStreetMap contributors (ODbL); power plants from EIA-860M (US Energy Information Administration).</footer>
 </main>
 
 <script>
@@ -347,7 +366,7 @@ for (const [k, stops] of Object.entries(CMAPS)) {
 const $ = id => document.getElementById(id);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const S = { ds:"now", metas:{}, meta:null, raw:{}, layer:"p72", flow:!reduceMotion, t:0, playing:false,
-  lam:-72, phi:22, z:1, auto:!reduceMotion, dragging:false, fly:null, dirty:true, hover:null };
+  lam:-72, phi:22, z:1, auto:!reduceMotion, dragging:false, fly:null, dirty:true, hover:null, grid:true };
 const GEO = {};
 
 /* ---------- layout ---------- */
@@ -497,6 +516,7 @@ function draw(){
   g=ctx.createRadialGradient(cx,cy,R*0.55,cx,cy,R);
   g.addColorStop(0,"rgba(3,10,16,0)"); g.addColorStop(1,"rgba(3,10,16,.5)");
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.fill();
+  drawGrid();
   // Asheville marker when zoomed in
   const a=S.ds==="helene"&&S.z>1.4&&fwd(...ASHEVILLE);
   if (a){
@@ -509,6 +529,100 @@ function draw(){
   // show the event card when the Southeast fills the view
   const near=S.ds==="helene" && d3.geoDistance([S.lam,S.phi],[SE.lam,SE.phi])*DEG<14 && S.z>1.4;
   $("eventCard").dataset.show=String(near);
+  const nearSE=d3.geoDistance([S.lam,S.phi],[SE.lam,SE.phi])*DEG<14 && S.z>1.4;
+  $("gridCard").dataset.show=String(S.ds==="now" && S.grid && !!GRID && nearSE);
+}
+
+/* ---------- power grid of the Southeast (prepare_grid.py) and its exposure to the forecast ---------- */
+const GRID_Z=1.4, EXPOSED=0.2;  // drawn when zoomed in; "exposed" = at least 20% chance of locally extreme rain (about 10x usual)
+const FUEL={gas:["Gas","#e9a23b"],coal:["Coal","#9a9a9a"],nuclear:["Nuclear","#c77dff"],hydro:["Hydro","#4cc9f0"],solar:["Solar","#ffd60a"],
+  wind:["Wind","#80ed99"],oil:["Oil","#c08497"],battery:["Battery","#ff70a6"],bio:["Biomass","#90be6d"],other:["Other","#ced4da"]};
+const LINE_STYLE={"115":[0.6,.38],"230":[1.0,.55],"345":[1.6,.8]};  // width (css px) and opacity by voltage class
+let GRID=null, GRID_PENDING=null;
+function loadGrid(){
+  return GRID_PENDING ||= fetch("data/grid/grid.json").then(r=>{ if (!r.ok) throw 0; return r.json(); }).then(g=>{
+    g.fuelKeys=g.fuels; GRID=g; $("gridKey").innerHTML=
+      `<span><i class="ln"></i>115–765 kV lines</span>`+
+      ["gas","coal","nuclear","solar","hydro"].map(k=>`<span><i class="dot" style="background:${FUEL[k][1]}"></i>${FUEL[k][0]}</span>`).join("")+
+      `<span><i class="dot" style="background:transparent;border:2px solid #ff4d6d"></i>≥${EXPOSED*100}% chance</span>`;
+    $("gridKey").hidden=!S.grid; updateExposure(); S.dirty=true;
+  }).catch(()=>{ GRID_PENDING=null; });
+}
+// detail follows how many css pixels a degree takes on screen: only large plants when the region is small
+const pxDeg=()=>V.R*RAD/V.dpr;
+const minPlantMw=()=>{ const k=pxDeg(); return k<25?500:k<45?100:k<80?20:0; };
+function plantR(mw){ return Math.min(9, Math.max(1.3, Math.sqrt(mw)/11*Math.sqrt(pxDeg()/40))); }
+function chanceAt(lon,lat){
+  if (S.ds!=="now" || !raw("plocal")) return NaN;
+  return sample(still("plocal"),lon,lat);
+}
+function drawGrid(){
+  if (!S.grid || !GRID || S.z<=GRID_Z) return;
+  const dpr=V.dpr, live=S.ds==="now"&&raw("plocal");
+  ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round";
+  for (const cls of ["115","230","345"]){
+    const [w,a]=LINE_STYLE[cls]; ctx.beginPath();
+    for (const ln of GRID.lines[cls]){
+      let pen=false;
+      for (let i=0;i<ln.length;i+=2){ const p=fwd(ln[i],ln[i+1]); if (!p){ pen=false; continue; } pen?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); pen=true; }
+    }
+    ctx.strokeStyle=`rgba(243,227,161,${a})`; ctx.lineWidth=w*dpr*Math.max(0.5,Math.min(1.8,Math.sqrt(pxDeg()/45))); ctx.stroke();
+  }
+  // substations once zoomed in further; skipped while dragging to keep rotation smooth
+  if (pxDeg()>70 && !S.dragging){
+    const s=2.2*dpr; ctx.fillStyle="rgba(230,238,244,.85)"; ctx.strokeStyle="#ff4d6d"; ctx.lineWidth=1.4*dpr;
+    for (const b of GRID.substations){ const p=fwd(b[0],b[1]); if (!p) continue; ctx.fillRect(p[0]-s/2,p[1]-s/2,s,s);
+      if (live && chanceAt(b[0],b[1])>=EXPOSED) ctx.strokeRect(p[0]-s,p[1]-s,2*s,2*s); }
+  }
+  const minMw=minPlantMw();
+  for (const pl of GRID.plants){
+    if (pl[2]<minMw) break;  // plants are sorted by capacity, largest first
+    const p=fwd(pl[0],pl[1]); if (!p) continue; const r=plantR(pl[2])*dpr;
+    ctx.beginPath(); ctx.arc(p[0],p[1],r,0,2*Math.PI); ctx.fillStyle=FUEL[GRID.fuelKeys[pl[3]]][1]; ctx.fill();
+    ctx.lineWidth=0.8*dpr; ctx.strokeStyle="rgba(5,14,22,.9)"; ctx.stroke();
+    if (live && chanceAt(pl[0],pl[1])>=EXPOSED){ ctx.beginPath(); ctx.arc(p[0],p[1],r+2.2*dpr,0,2*Math.PI); ctx.lineWidth=1.6*dpr; ctx.strokeStyle="#ff4d6d"; ctx.stroke(); }
+  }
+  ctx.fillStyle="#7bdff2"; ctx.strokeStyle="rgba(5,14,22,.9)"; ctx.lineWidth=0.8*dpr;
+  if (pxDeg()>35) for (const d of GRID.datacenters){ const p=fwd(d[0],d[1]); if (!p) continue; const s=3.4*dpr;
+    ctx.beginPath(); ctx.moveTo(p[0],p[1]-s); ctx.lineTo(p[0]+s,p[1]); ctx.lineTo(p[0],p[1]+s); ctx.lineTo(p[0]-s,p[1]); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  ctx.restore();
+}
+function nearestAsset(x,y){
+  let best=null, bd=(8*V.dpr)**2;
+  const test=(kind,a,r)=>{ const p=fwd(a[0],a[1]); if (!p) return; const d=(p[0]-x)**2+(p[1]-y)**2; if (d<Math.max(bd,(r||0)**2) && d<(best?best.d:Infinity)){ best={kind,a,d}; } };
+  const minMw=minPlantMw();
+  for (const pl of GRID.plants) if (pl[2]>=minMw) test("plant",pl,plantR(pl[2])*V.dpr+2*V.dpr);
+  if (pxDeg()>35) for (const d of GRID.datacenters) test("dc",d);
+  if (pxDeg()>70) for (const b of GRID.substations) test("sub",b);
+  return best;
+}
+function chanceText(lon,lat){
+  const c=chanceAt(lon,lat); if (c!==c) return "";
+  const b=sample(still("base"),lon,lat);
+  return `<br>Locally extreme rain, next 5 days: <b>${Math.round(c*100)}%</b> (usually ${(b*100).toFixed(1)}%)`;
+}
+function assetText({kind,a}){
+  if (kind==="plant"){ const f=FUEL[GRID.fuelKeys[a[3]]][0];
+    return `<b>${a[4]}</b> (${a[5]})<br>Power plant · ${a[2].toLocaleString("en-US")} MW · ${f}${chanceText(a[0],a[1])}`; }
+  if (kind==="dc") return `<b>${a[2]||"Data centre"}</b>${a[3]?` · ${a[3]}`:""}<br>Data centre (OpenStreetMap)${chanceText(a[0],a[1])}`;
+  return `<b>${a[3]||"Substation"}</b>${a[4]?` · ${a[4]}`:""}<br>Substation${a[2]?` · ${a[2]} kV`:""}${chanceText(a[0],a[1])}`;
+}
+function updateExposure(){
+  if (!GRID) return;
+  const el=$("gridSummary");
+  if (S.ds!=="now" || !raw("plocal")){ el.innerHTML=`<p>Exposure is computed from the 5-day forecast.</p>`; if (S.ds==="now" && S.meta?.layers.plocal) loadLayer("plocal").then(updateExposure).catch(()=>{}); return; }
+  const P=GRID.plants.map(p=>({p,c:chanceAt(p[0],p[1])})), hitP=P.filter(o=>o.c>=EXPOSED);
+  const subs=GRID.substations.filter(b=>chanceAt(b[0],b[1])>=EXPOSED).length;
+  const dcs=GRID.datacenters.filter(d=>chanceAt(d[0],d[1])>=EXPOSED).length;
+  const gw=a=>(a.reduce((s,o)=>s+o.p[2],0)/1000).toFixed(1);
+  const top=hitP.sort((a,b)=>b.c*Math.sqrt(b.p[2])-a.c*Math.sqrt(a.p[2])).slice(0,4);
+  el.innerHTML=`<ul>
+      <li><span><b>${subs.toLocaleString("en-US")}</b> of ${GRID.substations.length.toLocaleString("en-US")} transmission substations</span></li>
+      <li><span><b>${hitP.length}</b> of ${P.length} power plants · <b>${gw(hitP)} GW</b> of ${gw(P)} GW</span></li>
+      <li><span><b>${dcs}</b> of ${GRID.datacenters.length} mapped data centres</span></li></ul>`
+    +(top.length?`<ol>${top.map(o=>`<li>${o.p[4]} (${o.p[5]}) · ${o.p[2].toLocaleString("en-US")} MW ${FUEL[GRID.fuelKeys[o.p[3]]][0].toLowerCase()} · ${Math.round(o.c*100)}%</li>`).join("")}</ol>`
+                :`<p>No plant has a ${EXPOSED*100}% or higher chance in this forecast.</p>`)
+    +`<p class="small">Assets with at least a ${EXPOSED*100}% chance of locally extreme 3-day rain (about 10× the usual chance). Hover an asset for details.</p>`;
 }
 
 /* ---------- moving lines ---------- */
@@ -584,6 +698,8 @@ function updateReadout(){
   let lon=((ll[0]+180)%360+360)%360-180, lat=ll[1];
   const loc=`${Math.abs(lat).toFixed(1)}°${lat>=0?"N":"S"}, ${Math.abs(lon).toFixed(1)}°${lon<0?"W":"E"}`;
   let txt=loc;
+  const asset=S.grid&&GRID&&S.z>GRID_Z&&nearestAsset(S.hover.x*V.dpr,S.hover.y*V.dpr);
+  if (asset){ el.innerHTML=assetText(asset); el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false; return; }
   if (ensureField()){
     const v=sample(FIELD,lon,lat), L=LAYERS[S.layer];
     if (v===v){ const val=L.pct?`${Math.round(v*100)}% chance`:`${v>=100?Math.round(v).toLocaleString("en-US"):v.toFixed(1)} ${L.unit}${L.inches?` (${(v/25.4).toFixed(1)} in)`:""}`;
@@ -599,6 +715,7 @@ function updateReadout(){
 }
 let detailLoading=false;
 async function loadDetail(){
+  if (S.z>=GRID_Z) loadGrid();
   if (detailLoading || S.z<1.4) return; detailLoading=true;
   try {
     const [land, us]=await Promise.all([fetch(GEO_CDN+"world-atlas@2.0.2/land-50m.json").then(r=>r.json()), fetch(GEO_CDN+"us-atlas@3.0.1/states-10m.json").then(r=>r.json())]);
@@ -696,6 +813,7 @@ async function setDataset(key){
   await Promise.all(S.flow?DS.flow.map(loadLayer):[]).catch(()=>{});
   S.dirty=true;
   Object.values(LAYERS).flatMap(L=>L.needs).forEach(n=>loadLayer(n).catch(()=>{}));  // the rest in the background
+  updateExposure();
 }
 
 (async function init(){
@@ -705,6 +823,8 @@ async function setDataset(key){
   }
   $("flow").checked=S.flow;
   $("flow").onchange=e=>{ S.flow=e.target.checked; if (S.flow && S.meta) Promise.all(DS.flow.map(loadLayer)).catch(()=>{}); };
+  $("grid").checked=S.grid;
+  $("grid").onchange=e=>{ S.grid=e.target.checked; $("gridKey").hidden=!S.grid; if (S.grid) loadGrid(); S.dirty=true; };
   $("play").onclick=()=>S.playing?pause():play();
   $("time").addEventListener("input",e=>{ pause(); setTime(+e.target.value,true); });
   const goSE=()=>flyTo(SE.lam,SE.phi,innerWidth<=760?1.7:SE.z);

@@ -2,3 +2,4 @@ numpy==2.4.6
 eccodes==2.50.0
 eccodeslib==2.50.0.33
 numcodecs==0.16.6
+openpyxl==3.1.5
