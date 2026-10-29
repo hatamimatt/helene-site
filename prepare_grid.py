@@ -2,13 +2,16 @@
 """Power infrastructure of the US Southeast for the globe: lines, substations, plants, data centres.
 
 For Alabama, Florida, Georgia, Mississippi, North Carolina, South Carolina and Tennessee:
-  - transmission lines of 115 kV and above, substations and data centres from
-    OpenStreetMap through the Overpass API (the data behind Open Infrastructure Map)
+  - power lines of 44 kV and above (transmission and sub-transmission), transmission
+    substations (115 kV and above) and data centres from OpenStreetMap through the
+    Overpass API (the data behind Open Infrastructure Map)
   - operating power plants from EIA-860M, the US Energy Information Administration's
     monthly generator inventory, summed per plant (capacity, main fuel)
 
-Writes data/grid/grid.json (coordinates rounded to 0.001 degree, lines simplified)
-and data/grid/meta.json. The data changes slowly: rerun every few months.
+Writes data/grid/: grid.json (plants, substations, data centres), lines_<class>.json
+per voltage class so the globe loads only the classes a zoom level shows (coordinates
+rounded to 0.001 degree, lines simplified), and meta.json. Raw Overpass replies are
+cached in .cache/grid/. The data changes slowly: rerun every few months.
 OpenStreetMap data is ODbL: credit "OpenStreetMap contributors". EIA data is public domain.
 Needs openpyxl.
 
@@ -25,9 +28,10 @@ EIA = "https://www.eia.gov/electricity/data/eia860m/xls/{month}_generator{year}.
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august",
           "september", "october", "november", "december"]
 UA = "helene-site/1.0 (https://github.com/hatamimatt/helene-site)"
-MIN_KV = 115
+MIN_KV = 44                  # lines: transmission and sub-transmission
+MIN_SUB_KV = 115             # substations: transmission level only
 MIN_PLANT_MW = 5
-CLASSES = [(345, "345"), (230, "230"), (MIN_KV, "115")]   # 345-765 kV, 230-344 kV, 115-229 kV
+CLASSES = [(500, "500"), (200, "230"), (100, "115"), (MIN_KV, "69")]   # lower bound (kV), class name
 SIMPLIFY_DEG = 0.004                                     # about 400 m
 FUELS = ["gas", "coal", "nuclear", "hydro", "solar", "wind", "oil", "battery", "bio", "other"]
 
@@ -43,13 +47,18 @@ def fuel_of(tech):
     return "other"
 
 
-def overpass(query, tries=6):
+def overpass(query, cache_path=None, tries=6):
+    if cache_path and os.path.exists(cache_path):
+        return json.load(open(cache_path))
     body = urllib.parse.urlencode({"data": query}).encode()
     for k in range(tries):
         try:
             req = urllib.request.Request(OVERPASS, data=body, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=400) as r:
-                return json.load(r)["elements"]
+                elements = json.load(r)["elements"]
+            if cache_path:
+                json.dump(elements, open(cache_path, "w"))
+            return elements
         except Exception as e:  # Overpass answers 429/504 when busy
             if k == tries - 1:
                 raise
@@ -87,25 +96,30 @@ def centre(el):
     return round(c["lon"], 3), round(c["lat"], 3)
 
 
-def osm(state_codes):
-    lines = {c: [] for _, c in CLASSES}; subs, dcs = {}, {}
+def osm(state_codes, cache):
+    """Lines per class as {"ops": [operator names], "lines": [[kv, operator index, lon, lat, lon, lat, ...]]}."""
+    lines = {c: {"ops": [], "lines": []} for _, c in CLASSES}; subs, dcs = {}, {}
     seen = set()
     for code in state_codes:
         area = f'area["ISO3166-2"="US-{code}"][admin_level=4]->.a;'
         print(f"  OpenStreetMap {STATES[code]}…", flush=True)
-        for el in overpass(f'[out:json][timeout:300];{area}way["power"="line"]["voltage"](area.a);out tags geom;'):
-            v = kv(el.get("tags", {}))
+        cached = lambda kind: os.path.join(cache, f"osm_{code}_{kind}.json")
+        for el in overpass(f'[out:json][timeout:300];{area}way["power"="line"]["voltage"](area.a);out tags geom;', cached("lines")):
+            t = el.get("tags", {}); v = kv(t)
             if el["id"] in seen or v is None or v < MIN_KV or "geometry" not in el:
                 continue
             seen.add(el["id"])
             pts = simplify([(g["lon"], g["lat"]) for g in el["geometry"]], SIMPLIFY_DEG)
-            flat = [round(x, 3) for p in pts for x in p]
-            lines[next(c for lo, c in CLASSES if v >= lo)].append(flat)
-        for el in overpass(f'[out:json][timeout:300];{area}nwr["power"="substation"](area.a);out tags center;'):
+            group = lines[next(c for lo, c in CLASSES if v >= lo)]
+            op = t.get("operator", "")
+            if op not in group["ops"]:
+                group["ops"].append(op)
+            group["lines"].append([v, group["ops"].index(op)] + [round(x, 3) for p in pts for x in p])
+        for el in overpass(f'[out:json][timeout:300];{area}nwr["power"="substation"](area.a);out tags center;', cached("substations")):
             t = el.get("tags", {}); v = kv(t)
-            if (v or 0) >= MIN_KV or t.get("substation") == "transmission":
+            if (v or 0) >= MIN_SUB_KV or t.get("substation") == "transmission":
                 subs[(el["type"], el["id"])] = [*centre(el), v or 0, t.get("name", ""), t.get("operator", "")]
-        for el in overpass(f'[out:json][timeout:300];{area}(nwr["telecom"="data_center"](area.a);nwr["building"="data_center"](area.a););out tags center;'):
+        for el in overpass(f'[out:json][timeout:300];{area}(nwr["telecom"="data_center"](area.a);nwr["building"="data_center"](area.a););out tags center;', cached("datacenters")):
             t = el.get("tags", {})
             dcs[(el["type"], el["id"])] = [*centre(el), t.get("name", ""), t.get("operator", "")]
     return lines, list(subs.values()), list(dcs.values())
@@ -163,22 +177,25 @@ def main():
 
     print(f"Power infrastructure for {', '.join(codes)}", flush=True)
     plants, eia_month = eia(codes, os.path.join(".cache", "grid"))
-    lines, subs, dcs = osm(codes)
+    lines, subs, dcs = osm(codes, os.path.join(".cache", "grid"))
 
-    grid = {"lines": lines, "plants": plants, "substations": subs, "datacenters": dcs, "fuels": FUELS}
+    grid = {"plants": plants, "substations": subs, "datacenters": dcs, "fuels": FUELS, "lineClasses": [c for _, c in CLASSES]}
     with open(os.path.join(args.out, "grid.json"), "w") as fh:
         json.dump(grid, fh, separators=(",", ":"))
+    for c, group in lines.items():
+        with open(os.path.join(args.out, f"lines_{c}.json"), "w") as fh:
+            json.dump(group, fh, separators=(",", ":"))
     meta = {
         "created": time.strftime("%Y-%m-%d", time.gmtime()), "states": codes,
-        "lineClassesKv": {c: lo for lo, c in CLASSES}, "minPlantMw": MIN_PLANT_MW, "eiaMonth": eia_month,
-        "counts": {"lines": {c: len(v) for c, v in lines.items()}, "plants": len(plants),
+        "lineClassesKv": {c: lo for lo, c in CLASSES}, "minSubstationKv": MIN_SUB_KV, "minPlantMw": MIN_PLANT_MW, "eiaMonth": eia_month,
+        "counts": {"lines": {c: len(v["lines"]) for c, v in lines.items()}, "plants": len(plants),
                    "substations": len(subs), "datacenters": len(dcs)},
         "source": "OpenStreetMap contributors (ODbL) via Overpass API; EIA-860M (US Energy Information Administration)",
     }
     with open(os.path.join(args.out, "meta.json"), "w") as fh:
         json.dump(meta, fh, indent=1)
-    size = os.path.getsize(os.path.join(args.out, "grid.json")) / 1e6
-    print(f"Done: {json.dumps(meta['counts'])}; grid.json {size:.1f} MB")
+    sizes = {f: os.path.getsize(os.path.join(args.out, f)) / 1e6 for f in sorted(os.listdir(args.out)) if f.endswith(".json")}
+    print(f"Done: {json.dumps(meta['counts'])}\n  " + ", ".join(f"{f} {mb:.1f} MB" for f, mb in sizes.items()))
     print(f"  plant capacity {sum(p[2] for p in plants) / 1000:.0f} GW; largest: " + "; ".join(f"{p[4]} ({p[2]} MW)" for p in plants[:3]))
 
 

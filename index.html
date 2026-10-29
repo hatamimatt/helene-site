@@ -391,7 +391,7 @@ function layout(){
   V.bw=Math.ceil(V.W/V.ds); V.bh=Math.ceil(V.H/V.ds);
   buf.width=V.bw; buf.height=V.bh; bufImg=bctx.createImageData(V.bw,V.bh);
   stars=Array.from({length:Math.round(V.W*V.H/(9000*d*d))},()=>[Math.random()*V.W,Math.random()*V.H,Math.random()*0.5+0.15]);
-  S.dirty=true; S.fieldKey=""; tctx.clearRect(0,0,V.W,V.H);
+  S.dirty=true; S.fieldKey=""; fieldDrawnKey=""; PIX.key=""; tctx.clearRect(0,0,V.W,V.H);
 }
 
 /* ---------- projection (orthographic, written out for speed) ---------- */
@@ -464,27 +464,54 @@ function sample(arr, lon, lat){
 }
 
 /* ---------- drawing ---------- */
-function renderField(){
-  const img=bufImg.data; img.fill(0);
-  if (!ensureField()) { bctx.putImageData(bufImg,0,0); return; }
-  const L=LAYERS[S.layer], lut=LUT[L.cmap], v0=L.range[0], sc=255/(L.range[1]-L.range[0]);
-  const {cx,cy,R,sp,cp,ds,bw,bh}=V, R2=R*R, lam=S.lam;
-  for (let j=0;j<bh;j++){
+// Per buffer pixel, the grid cell and interpolation weights it samples. Recomputed only when the view
+// moves, so playback, hover highlights and other redraws of a still view reuse it.
+const PIX={key:"", a:null, b:null, fx:null, fy:null};
+let fieldDrawnKey="";
+function pixelMap(){
+  // while the globe moves, every other pixel in each direction, copied to its neighbours
+  const {cx,cy,R,sp,cp,ds,bw,bh}=V, step=S.dragging||S.fly?2:1, key=[S.lam,S.phi,R,bw,bh,NLON,NLAT,GD,step].join("|");
+  if (PIX.key===key) return;
+  const n=bw*bh, R2=R*R, lam=S.lam;
+  if (!PIX.a||PIX.a.length!==n){ PIX.a=new Int32Array(n); PIX.b=new Int32Array(n); PIX.fx=new Float32Array(n); PIX.fy=new Float32Array(n); }
+  PIX.a.fill(-1);
+  for (let j=0;j<bh;j+=step){
     const y=cy-(j+0.5)*ds;
     if (Math.abs(y)>=R) continue;
-    for (let i=0;i<bw;i++){
+    for (let i=0;i<bw;i+=step){
       const x=(i+0.5)*ds-cx, r2=x*x+y*y;
       if (r2>=R2) continue;
       const rho=Math.sqrt(r2), s=rho/R, c=Math.sqrt(1-s*s);
       const lat=rho<1e-9?S.phi:Math.asin(c*sp+y*s*cp/rho)*DEG;
       const lon=lam+Math.atan2(x*s, rho*c*cp-y*s*sp)*DEG;
-      const v=sample(FIELD,lon,lat);
-      if (v!==v) continue;
-      let q=(v-v0)*sc; q=q<0?0:q>255?255:q|0; q*=4;
-      const o=(j*bw+i)*4; img[o]=lut[q]; img[o+1]=lut[q+1]; img[o+2]=lut[q+2]; img[o+3]=lut[q+3];
+      // same cell arithmetic as sample()
+      let gx=(lon+180)/GD; gx-=NLON*Math.floor(gx/NLON);
+      const gy=Math.min(NLAT-1.0001,Math.max(0,(90-lat)/GD));
+      const c0=gx|0, r0=gy|0, o=j*bw+i;
+      PIX.a[o]=r0*NLON+c0; PIX.b[o]=c0===NLON-1?1-NLON:1; PIX.fx[o]=gx-c0; PIX.fy[o]=gy-r0;
+      if (step===2) for (const q of [o+1, o+bw, o+bw+1]) if (q<n && (q%bw)>=i){ PIX.a[q]=PIX.a[o]; PIX.b[q]=PIX.b[o]; PIX.fx[q]=PIX.fx[o]; PIX.fy[q]=PIX.fy[o]; }
     }
   }
-  bctx.putImageData(bufImg,0,0);
+  PIX.key=key;
+}
+function renderField(){
+  const img=bufImg.data;
+  if (!ensureField()) { img.fill(0); bctx.putImageData(bufImg,0,0); fieldDrawnKey=""; return; }
+  pixelMap();
+  const drawn=PIX.key+"|"+S.ds+"|"+S.fieldKey;
+  if (drawn===fieldDrawnKey) return;  // the buffer already holds this view and frame
+  img.fill(0);
+  const L=LAYERS[S.layer], lut=LUT[L.cmap], v0=L.range[0], sc=255/(L.range[1]-L.range[0]);
+  const {a:A,b:B,fx:FX,fy:FY}=PIX, N=NLON, F=FIELD;
+  for (let o=0;o<A.length;o++){
+    const a=A[o]; if (a<0) continue;
+    const b=B[o], fx=FX[o], fy=FY[o];
+    const v=(F[a]*(1-fx)+F[a+b]*fx)*(1-fy)+(F[a+N]*(1-fx)+F[a+N+b]*fx)*fy;
+    if (v!==v) continue;
+    let q=(v-v0)*sc; q=q<0?0:q>255?255:q|0; q*=4;
+    const p=o*4; img[p]=lut[q]; img[p+1]=lut[q+1]; img[p+2]=lut[q+2]; img[p+3]=lut[q+3];
+  }
+  bctx.putImageData(bufImg,0,0); fieldDrawnKey=drawn;
 }
 function draw(){
   if (!bufImg) return;
@@ -537,64 +564,140 @@ function draw(){
 const GRID_Z=1.4, EXPOSED=0.2;  // drawn when zoomed in; "exposed" = at least 20% chance of locally extreme rain (about 10x usual)
 const FUEL={gas:["Gas","#e9a23b"],coal:["Coal","#9a9a9a"],nuclear:["Nuclear","#c77dff"],hydro:["Hydro","#4cc9f0"],solar:["Solar","#ffd60a"],
   wind:["Wind","#80ed99"],oil:["Oil","#c08497"],battery:["Battery","#ff70a6"],bio:["Biomass","#90be6d"],other:["Other","#ced4da"]};
-const LINE_STYLE={"115":[0.6,.38],"230":[1.0,.55],"345":[1.6,.8]};  // width (css px) and opacity by voltage class
+// voltage classes, highest first: colour, width (css px) and the scale (css px per degree) from which each appears
+const LINE_CLASSES=[
+  {k:"500", label:"500 kV",     color:"#fff1a8", w:2.1, from:0},
+  {k:"230", label:"230–345 kV", color:"#f39b4a", w:1.3, from:20},
+  {k:"115", label:"115–161 kV", color:"#b9a3ff", w:1.0, from:40},
+  {k:"69",  label:"44–99 kV",   color:"#86d1ab", w:0.8, from:80}];
+const CELL=0.25;  // degrees, for the hover index of line segments
 let GRID=null, GRID_PENDING=null;
+const LINES={}, LINES_PENDING={};
 function loadGrid(){
   return GRID_PENDING ||= fetch("data/grid/grid.json").then(r=>{ if (!r.ok) throw 0; return r.json(); }).then(g=>{
-    g.fuelKeys=g.fuels; GRID=g; $("gridKey").innerHTML=
-      `<span><i class="ln"></i>115–765 kV lines</span>`+
-      ["gas","coal","nuclear","solar","hydro"].map(k=>`<span><i class="dot" style="background:${FUEL[k][1]}"></i>${FUEL[k][0]}</span>`).join("")+
-      `<span><i class="dot" style="background:transparent;border:2px solid #ff4d6d"></i>≥${EXPOSED*100}% chance</span>`;
-    $("gridKey").hidden=!S.grid; updateExposure(); S.dirty=true;
+    g.fuelKeys=g.fuels; GRID=g; updateExposure(); updateGridKey(true); S.dirty=true;
   }).catch(()=>{ GRID_PENDING=null; });
 }
-// detail follows how many css pixels a degree takes on screen: only large plants when the region is small
+function loadLines(k){
+  return LINES_PENDING[k] ||= fetch(`data/grid/lines_${k}.json`).then(r=>{ if (!r.ok) throw 0; return r.json(); }).then(g=>{
+    // per line: bounding-circle centre and radius (degrees) to skip lines off screen, and a cell index for hover
+    const n=g.lines.length, cx=new Float32Array(n), cy=new Float32Array(n), rad=new Float32Array(n), idx=new Map();
+    g.lines.forEach((a,i)=>{
+      let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+      for (let j=2;j<a.length;j+=2){ const x=a[j], y=a[j+1]; if (x<x0) x0=x; if (x>x1) x1=x; if (y<y0) y0=y; if (y>y1) y1=y;
+        const key=Math.floor(x/CELL)*4096+Math.floor(y/CELL), list=idx.get(key);
+        if (!list) idx.set(key,[i]); else if (list[list.length-1]!==i) list.push(i); }
+      cx[i]=(x0+x1)/2; cy[i]=(y0+y1)/2; rad[i]=Math.hypot((x1-x0)/2*Math.cos(cy[i]*RAD),(y1-y0)/2);
+    });
+    LINES[k]={...g, cx, cy, rad, idx}; S.dirty=true;
+  }).catch(()=>{ delete LINES_PENDING[k]; });
+}
+// detail follows how many css pixels a degree takes on screen
 const pxDeg=()=>V.R*RAD/V.dpr;
+const visibleClasses=()=>LINE_CLASSES.filter(c=>pxDeg()>=c.from);
 const minPlantMw=()=>{ const k=pxDeg(); return k<25?500:k<45?100:k<80?20:0; };
 function plantR(mw){ return Math.min(9, Math.max(1.3, Math.sqrt(mw)/11*Math.sqrt(pxDeg()/40))); }
 function chanceAt(lon,lat){
   if (S.ds!=="now" || !raw("plocal")) return NaN;
   return sample(still("plocal"),lon,lat);
 }
+function updateGridKey(force){
+  const sig=visibleClasses().length;
+  if (!force && sig===S.gridKeySig) return; S.gridKeySig=sig;
+  $("gridKey").innerHTML=LINE_CLASSES.map(c=>`<span style="opacity:${pxDeg()>=c.from?1:.4}" title="${pxDeg()>=c.from?"":"Zoom in to show"}"><i class="ln" style="border-color:${c.color}"></i>${c.label}</span>`).join("")
+    +["gas","coal","nuclear","solar","hydro"].map(k=>`<span><i class="dot" style="background:${FUEL[k][1]}"></i>${FUEL[k][0]}</span>`).join("")
+    +`<span><i class="dot" style="background:transparent;border:2px solid #ff4d6d"></i>≥${EXPOSED*100}% chance</span>`;
+  $("gridKey").hidden=!S.grid;
+}
+// the grid is drawn into its own canvas and reused while only the forecast time changes (playback)
+const gcv=document.createElement("canvas"), gctx=gcv.getContext("2d");
+let gridCacheKey="";
 function drawGrid(){
   if (!S.grid || !GRID || S.z<=GRID_Z) return;
-  const dpr=V.dpr, live=S.ds==="now"&&raw("plocal");
-  ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round";
-  for (const cls of ["115","230","345"]){
-    const [w,a]=LINE_STYLE[cls]; ctx.beginPath();
-    for (const ln of GRID.lines[cls]){
-      let pen=false;
-      for (let i=0;i<ln.length;i+=2){ const p=fwd(ln[i],ln[i+1]); if (!p){ pen=false; continue; } pen?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); pen=true; }
+  const vis=visibleClasses(); vis.forEach(c=>loadLines(c.k)); updateGridKey();
+  const hl=S.hl, key=[S.lam,S.phi,S.z,V.W,V.H,S.ds,hl?hl.k+hl.i:"",S.dragging,Object.keys(LINES).length,GRID.hitStamp].join("|");
+  if (key!==gridCacheKey){ gridCacheKey=key; renderGrid(vis, hl); }
+  ctx.drawImage(gcv,0,0);
+}
+function renderGrid(vis, hl){
+  const {W,H,dpr}=V, k=pxDeg(), g=gctx, m=40*dpr, scale=Math.max(0.6,Math.min(1.8,Math.sqrt(k/45)));
+  if (gcv.width!==W||gcv.height!==H){ gcv.width=W; gcv.height=H; }
+  g.clearRect(0,0,W,H); g.lineJoin="round"; g.lineCap="round";
+  const trace=(L,i)=>{ const a=L.lines[i]; let pen=false;
+    for (let j=2;j<a.length;j+=2){ const p=fwd(a[j],a[j+1]); if (!p){ pen=false; continue; } pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); pen=true; } };
+  // lowest voltage first so the big lines sit on top
+  for (const c of [...vis].reverse()){
+    const L=LINES[c.k]; if (!L) continue;
+    g.beginPath();
+    for (let i=0;i<L.lines.length;i++){
+      const p=fwd(L.cx[i],L.cy[i]), rp=L.rad[i]*k*dpr;
+      if (!p){ if (L.rad[i]<3) continue; }
+      else if (p[0]<-rp-m||p[0]>W+rp+m||p[1]<-rp-m||p[1]>H+rp+m) continue;
+      trace(L,i);
     }
-    ctx.strokeStyle=`rgba(243,227,161,${a})`; ctx.lineWidth=w*dpr*Math.max(0.5,Math.min(1.8,Math.sqrt(pxDeg()/45))); ctx.stroke();
+    const dim=hl && hl.k!==c.k;
+    g.strokeStyle=dim?"rgba(150,160,170,.16)":c.color; g.globalAlpha=dim?1:(hl?1:.8);
+    g.lineWidth=c.w*dpr*scale*(hl&&!dim?1.25:1); g.stroke(); g.globalAlpha=1;
   }
+  if (hl && LINES[hl.k]){  // the hovered line itself, with a soft glow
+    g.beginPath(); trace(LINES[hl.k],hl.i);
+    g.strokeStyle="rgba(255,255,255,.35)"; g.lineWidth=(LINE_CLASSES.find(c=>c.k===hl.k).w*scale+5)*dpr; g.stroke();
+    g.strokeStyle="#fff"; g.lineWidth=(LINE_CLASSES.find(c=>c.k===hl.k).w*scale+1)*dpr; g.stroke();
+  }
+  g.globalAlpha=hl?.35:1;
   // substations once zoomed in further; skipped while dragging to keep rotation smooth
-  if (pxDeg()>70 && !S.dragging){
-    const s=2.2*dpr; ctx.fillStyle="rgba(230,238,244,.85)"; ctx.strokeStyle="#ff4d6d"; ctx.lineWidth=1.4*dpr;
-    for (const b of GRID.substations){ const p=fwd(b[0],b[1]); if (!p) continue; ctx.fillRect(p[0]-s/2,p[1]-s/2,s,s);
-      if (live && chanceAt(b[0],b[1])>=EXPOSED) ctx.strokeRect(p[0]-s,p[1]-s,2*s,2*s); }
+  if (k>70 && !S.dragging){
+    const s=2.2*dpr; g.fillStyle="rgba(230,238,244,.85)"; g.strokeStyle="#ff4d6d"; g.lineWidth=1.4*dpr;
+    GRID.substations.forEach((b,i)=>{ const p=fwd(b[0],b[1]); if (!p||p[0]<-m||p[0]>W+m||p[1]<-m||p[1]>H+m) return; g.fillRect(p[0]-s/2,p[1]-s/2,s,s);
+      if (GRID.subHit&&GRID.subHit[i]) g.strokeRect(p[0]-s,p[1]-s,2*s,2*s); });
   }
   const minMw=minPlantMw();
-  for (const pl of GRID.plants){
-    if (pl[2]<minMw) break;  // plants are sorted by capacity, largest first
+  for (let i=0;i<GRID.plants.length;i++){
+    const pl=GRID.plants[i]; if (pl[2]<minMw) break;  // plants are sorted by capacity, largest first
     const p=fwd(pl[0],pl[1]); if (!p) continue; const r=plantR(pl[2])*dpr;
-    ctx.beginPath(); ctx.arc(p[0],p[1],r,0,2*Math.PI); ctx.fillStyle=FUEL[GRID.fuelKeys[pl[3]]][1]; ctx.fill();
-    ctx.lineWidth=0.8*dpr; ctx.strokeStyle="rgba(5,14,22,.9)"; ctx.stroke();
-    if (live && chanceAt(pl[0],pl[1])>=EXPOSED){ ctx.beginPath(); ctx.arc(p[0],p[1],r+2.2*dpr,0,2*Math.PI); ctx.lineWidth=1.6*dpr; ctx.strokeStyle="#ff4d6d"; ctx.stroke(); }
+    g.beginPath(); g.arc(p[0],p[1],r,0,2*Math.PI); g.fillStyle=FUEL[GRID.fuelKeys[pl[3]]][1]; g.fill();
+    g.lineWidth=0.8*dpr; g.strokeStyle="rgba(5,14,22,.9)"; g.stroke();
+    if (GRID.plantHit&&GRID.plantHit[i]){ g.beginPath(); g.arc(p[0],p[1],r+2.2*dpr,0,2*Math.PI); g.lineWidth=1.6*dpr; g.strokeStyle="#ff4d6d"; g.stroke(); }
   }
-  ctx.fillStyle="#7bdff2"; ctx.strokeStyle="rgba(5,14,22,.9)"; ctx.lineWidth=0.8*dpr;
-  if (pxDeg()>35) for (const d of GRID.datacenters){ const p=fwd(d[0],d[1]); if (!p) continue; const s=3.4*dpr;
-    ctx.beginPath(); ctx.moveTo(p[0],p[1]-s); ctx.lineTo(p[0]+s,p[1]); ctx.lineTo(p[0],p[1]+s); ctx.lineTo(p[0]-s,p[1]); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-  ctx.restore();
+  g.fillStyle="#7bdff2"; g.strokeStyle="rgba(5,14,22,.9)"; g.lineWidth=0.8*dpr;
+  if (k>35) for (const d of GRID.datacenters){ const p=fwd(d[0],d[1]); if (!p) continue; const s=3.4*dpr;
+    g.beginPath(); g.moveTo(p[0],p[1]-s); g.lineTo(p[0]+s,p[1]); g.lineTo(p[0],p[1]+s); g.lineTo(p[0]-s,p[1]); g.closePath(); g.fill(); g.stroke(); }
+  g.globalAlpha=1;
 }
 function nearestAsset(x,y){
   let best=null, bd=(8*V.dpr)**2;
   const test=(kind,a,r)=>{ const p=fwd(a[0],a[1]); if (!p) return; const d=(p[0]-x)**2+(p[1]-y)**2; if (d<Math.max(bd,(r||0)**2) && d<(best?best.d:Infinity)){ best={kind,a,d}; } };
   const minMw=minPlantMw();
-  for (const pl of GRID.plants) if (pl[2]>=minMw) test("plant",pl,plantR(pl[2])*V.dpr+2*V.dpr);
+  for (const pl of GRID.plants){ if (pl[2]<minMw) break; test("plant",pl,plantR(pl[2])*V.dpr+2*V.dpr); }
   if (pxDeg()>35) for (const d of GRID.datacenters) test("dc",d);
   if (pxDeg()>70) for (const b of GRID.substations) test("sub",b);
   return best;
+}
+// the visible line closest to the pointer, within 6 css px, found through the cell index
+function lineAt(x,y){
+  const ll=inv(x,y); if (!ll) return null;
+  const tol=6*V.dpr, tlat=tol/(pxDeg()*V.dpr), tlon=tlat/Math.max(0.2,Math.cos(ll[1]*RAD));
+  let best=null, bd=tol*tol;
+  for (const c of visibleClasses()){
+    const L=LINES[c.k]; if (!L) continue; const seen=new Set();
+    for (let gx=Math.floor((ll[0]-tlon)/CELL); gx<=Math.floor((ll[0]+tlon)/CELL); gx++)
+      for (let gy=Math.floor((ll[1]-tlat)/CELL); gy<=Math.floor((ll[1]+tlat)/CELL); gy++)
+        for (const i of L.idx.get(gx*4096+gy)||[]){
+          if (seen.has(i)) continue; seen.add(i);
+          const a=L.lines[i]; let q=fwd(a[2],a[3]);
+          for (let j=4;j<a.length;j+=2){
+            const p=fwd(a[j],a[j+1]);
+            if (p&&q){ const dx=p[0]-q[0], dy=p[1]-q[1], t=Math.max(0,Math.min(1,((x-q[0])*dx+(y-q[1])*dy)/(dx*dx+dy*dy||1)));
+              const d=(q[0]+t*dx-x)**2+(q[1]+t*dy-y)**2; if (d<bd){ bd=d; best={k:c.k,i}; } }
+            q=p;
+          }
+        }
+  }
+  return best;
+}
+function lineText({k,i}){
+  const L=LINES[k], a=L.lines[i], c=LINE_CLASSES.find(c=>c.k===k), op=L.ops[a[1]];
+  return `<b>${a[0]} kV power line</b>${op?` · ${op}`:""}<br>Highlighting all ${c.label} lines (${L.lines.length.toLocaleString("en-US")} in the 7 states)`;
 }
 function chanceText(lon,lat){
   const c=chanceAt(lon,lat); if (c!==c) return "";
@@ -610,19 +713,21 @@ function assetText({kind,a}){
 function updateExposure(){
   if (!GRID) return;
   const el=$("gridSummary");
+  GRID.plantHit=GRID.subHit=null; GRID.hitStamp=(GRID.hitStamp||0)+1; S.dirty=true;
   if (S.ds!=="now" || !raw("plocal")){ el.innerHTML=`<p>Exposure is computed from the 5-day forecast.</p>`; if (S.ds==="now" && S.meta?.layers.plocal) loadLayer("plocal").then(updateExposure).catch(()=>{}); return; }
-  const P=GRID.plants.map(p=>({p,c:chanceAt(p[0],p[1])})), hitP=P.filter(o=>o.c>=EXPOSED);
-  const subs=GRID.substations.filter(b=>chanceAt(b[0],b[1])>=EXPOSED).length;
-  const dcs=GRID.datacenters.filter(d=>chanceAt(d[0],d[1])>=EXPOSED).length;
-  const gw=a=>(a.reduce((s,o)=>s+o.p[2],0)/1000).toFixed(1);
-  const top=hitP.sort((a,b)=>b.c*Math.sqrt(b.p[2])-a.c*Math.sqrt(a.p[2])).slice(0,4);
+  const pc=GRID.plants.map(p=>chanceAt(p[0],p[1]));
+  GRID.plantHit=Uint8Array.from(pc,c=>c>=EXPOSED); GRID.subHit=Uint8Array.from(GRID.substations,b=>chanceAt(b[0],b[1])>=EXPOSED);
+  const hitP=GRID.plants.map((p,i)=>({p,c:pc[i]})).filter(o=>o.c>=EXPOSED);
+  const subs=GRID.subHit.reduce((s,v)=>s+v,0), dcs=GRID.datacenters.filter(d=>chanceAt(d[0],d[1])>=EXPOSED).length;
+  const gw=a=>(a.reduce((s,p)=>s+p[2],0)/1000).toFixed(1);
+  const top=[...hitP].sort((a,b)=>b.c*Math.sqrt(b.p[2])-a.c*Math.sqrt(a.p[2])).slice(0,4);
   el.innerHTML=`<ul>
       <li><span><b>${subs.toLocaleString("en-US")}</b> of ${GRID.substations.length.toLocaleString("en-US")} transmission substations</span></li>
-      <li><span><b>${hitP.length}</b> of ${P.length} power plants · <b>${gw(hitP)} GW</b> of ${gw(P)} GW</span></li>
+      <li><span><b>${hitP.length}</b> of ${GRID.plants.length} power plants · <b>${gw(hitP.map(o=>o.p))} GW</b> of ${gw(GRID.plants)} GW</span></li>
       <li><span><b>${dcs}</b> of ${GRID.datacenters.length} mapped data centres</span></li></ul>`
     +(top.length?`<ol>${top.map(o=>`<li>${o.p[4]} (${o.p[5]}) · ${o.p[2].toLocaleString("en-US")} MW ${FUEL[GRID.fuelKeys[o.p[3]]][0].toLowerCase()} · ${Math.round(o.c*100)}%</li>`).join("")}</ol>`
                 :`<p>No plant has a ${EXPOSED*100}% or higher chance in this forecast.</p>`)
-    +`<p class="small">Assets with at least a ${EXPOSED*100}% chance of locally extreme 3-day rain (about 10× the usual chance). Hover an asset for details.</p>`;
+    +`<p class="small">Assets with at least a ${EXPOSED*100}% chance of locally extreme 3-day rain (about 10× the usual chance). Hover an asset or line for details.</p>`;
 }
 
 /* ---------- moving lines ---------- */
@@ -667,7 +772,7 @@ const fmtTime=i=>{ const d=new Date(S.meta.times[i]+"Z"), hh=String(d.getUTCHour
   return `${fmtDay(d)} <span>· ${hh}:00 UTC</span>`; };
 function setTime(t, fromSlider){
   S.t=Math.max(0,Math.min(NT()-1,t)); if (!fromSlider) $("time").value=S.t;
-  $("when").innerHTML=fmtTime(Math.round(S.t)); S.dirty=true; updateReadout();
+  $("when").innerHTML=fmtTime(Math.round(S.t)); S.dirty=true; S.hoverDirty=true;
 }
 function play(){ S.playing=true; $("play").textContent="❚❚"; $("play").setAttribute("aria-label","Pause"); }
 function pause(){ S.playing=false; $("play").textContent="▶"; $("play").setAttribute("aria-label","Play"); }
@@ -689,17 +794,21 @@ function flyTo(lam,phi,z,then){
   S.auto=false;
   S.fly={t0:performance.now(), d:reduceMotion?1:1900, from:{lam:S.lam,phi:S.phi,z:S.z}, to:{lam:tl,phi,z}, then};
 }
-function zoomBy(f){ S.z=Math.max(0.7,Math.min(10,S.z*f)); S.auto=false; S.dirty=true; tctx.clearRect(0,0,V.W,V.H); loadDetail(); }
+const ZMAX=60;  // about 0.1 degree across a typical screen
+function zoomBy(f){ S.z=Math.max(0.7,Math.min(ZMAX,S.z*f)); S.auto=false; S.dirty=true; tctx.clearRect(0,0,V.W,V.H); loadDetail(); }
 function updateReadout(){
   const el=$("readout");
-  if (!S.hover){ el.hidden=true; return; }
+  const setHl=h=>{ if ((h?h.k+h.i:"")!==(S.hl?S.hl.k+S.hl.i:"")){ S.hl=h; S.dirty=true; } };
+  if (!S.hover){ el.hidden=true; setHl(null); return; }
   const ll=inv(S.hover.x*V.dpr,S.hover.y*V.dpr);
-  if (!ll){ el.hidden=true; return; }
+  if (!ll){ el.hidden=true; setHl(null); return; }
   let lon=((ll[0]+180)%360+360)%360-180, lat=ll[1];
   const loc=`${Math.abs(lat).toFixed(1)}°${lat>=0?"N":"S"}, ${Math.abs(lon).toFixed(1)}°${lon<0?"W":"E"}`;
   let txt=loc;
-  const asset=S.grid&&GRID&&S.z>GRID_Z&&nearestAsset(S.hover.x*V.dpr,S.hover.y*V.dpr);
-  if (asset){ el.innerHTML=assetText(asset); el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false; return; }
+  const onGrid=S.grid&&GRID&&S.z>GRID_Z, hx=S.hover.x*V.dpr, hy=S.hover.y*V.dpr;
+  const asset=onGrid&&nearestAsset(hx,hy), line=onGrid&&!asset&&lineAt(hx,hy);
+  setHl(line||null);
+  if (asset||line){ el.innerHTML=asset?assetText(asset):lineText(line); el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false; return; }
   if (ensureField()){
     const v=sample(FIELD,lon,lat), L=LAYERS[S.layer];
     if (v===v){ const val=L.pct?`${Math.round(v*100)}% chance`:`${v>=100?Math.round(v).toLocaleString("en-US"):v.toFixed(1)} ${L.unit}${L.inches?` (${(v/25.4).toFixed(1)} in)`:""}`;
@@ -738,23 +847,23 @@ cv.addEventListener("pointermove",e=>{
   const r=$("top").getBoundingClientRect();
   if (pointers.has(e.pointerId)){
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if (pinch0 && pointers.size===2){ const [a,b]=[...pointers.values()]; S.z=Math.max(0.7,Math.min(10,pinch0.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch0.d)); S.dirty=true; S.dragging=true; }
+    if (pinch0 && pointers.size===2){ const [a,b]=[...pointers.values()]; S.z=Math.max(0.7,Math.min(ZMAX,pinch0.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch0.d)); S.dirty=true; S.dragging=true; }
     else if (drag0){
       const dx=(e.clientX-drag0.x)*V.dpr, dy=(e.clientY-drag0.y)*V.dpr;
       if (Math.hypot(dx,dy)>3*V.dpr){ S.dragging=true; cv.classList.add("dragging"); }
       S.lam=drag0.lam-dx/V.R*DEG; S.phi=Math.max(-80,Math.min(80,drag0.phi+dy/V.R*DEG)); S.dirty=true;
     }
   }
-  if (e.pointerType==="mouse"){ S.hover={x:e.clientX-r.left,y:e.clientY-r.top}; updateReadout(); }
+  if (e.pointerType==="mouse"){ S.hover={x:e.clientX-r.left,y:e.clientY-r.top}; S.hoverDirty=true; }
 });
 function endPointer(e){
   pointers.delete(e.pointerId);
   if (pointers.size<2) pinch0=null;
-  if (pointers.size===0){ drag0=null; S.dragging=false; cv.classList.remove("dragging"); loadDetail(); }
+  if (pointers.size===0){ drag0=null; S.dragging=false; S.dirty=true; cv.classList.remove("dragging"); loadDetail(); }
 }
 cv.addEventListener("pointerup",endPointer);
 cv.addEventListener("pointercancel",endPointer);
-cv.addEventListener("pointerleave",()=>{ S.hover=null; updateReadout(); });
+cv.addEventListener("pointerleave",()=>{ S.hover=null; S.hoverDirty=true; });
 // trackpad pinch arrives as ctrl+wheel; plain wheel keeps scrolling the page
 cv.addEventListener("wheel",e=>{ if (!e.ctrlKey) return; e.preventDefault(); zoomBy(Math.exp(-e.deltaY*0.01)); },{passive:false});
 cv.addEventListener("keydown",e=>{
@@ -776,7 +885,8 @@ function frame(ts){
     if (k>=1){ S.fly=null; loadDetail(); if (f.then) f.then(); }
   } else if (S.auto && !S.dragging){ S.lam-=dt*3.5; S.dirty=true; }
   if (S.playing && S.meta){ let t=S.t+dt*1.6; if (t>NT()-1) t=0; setTime(t); }
-  if (S.dirty){ S.dirty=false; draw(); if (S.hover) updateReadout(); }
+  if (S.dirty){ S.dirty=false; draw(); if (S.hover) S.hoverDirty=true; }
+  if (S.hoverDirty && !S.dragging){ S.hoverDirty=false; updateReadout(); }
   stepFlow();
   requestAnimationFrame(frame);
 }
@@ -824,7 +934,7 @@ async function setDataset(key){
   $("flow").checked=S.flow;
   $("flow").onchange=e=>{ S.flow=e.target.checked; if (S.flow && S.meta) Promise.all(DS.flow.map(loadLayer)).catch(()=>{}); };
   $("grid").checked=S.grid;
-  $("grid").onchange=e=>{ S.grid=e.target.checked; $("gridKey").hidden=!S.grid; if (S.grid) loadGrid(); S.dirty=true; };
+  $("grid").onchange=e=>{ S.grid=e.target.checked; $("gridKey").hidden=!S.grid; S.hl=null; if (S.grid) loadGrid(); S.dirty=true; };
   $("play").onclick=()=>S.playing?pause():play();
   $("time").addEventListener("input",e=>{ pause(); setTime(+e.target.value,true); });
   const goSE=()=>flyTo(SE.lam,SE.phi,innerWidth<=760?1.7:SE.z);
