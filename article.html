@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Article · Matt Hatami</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="assets/writing.js"></script>
+<style>
+/* One article from articles/<slug>.md, listed in articles/index.json (see articles/HOW-TO.md) */
+:root{
+  --paper:#F7F8F9; --ink:#14181B; --muted:#5A6670; --line:#D5DBDF; --accent:#1B6A88; --code:#EDF0F2;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --paper:#0E1A23; --ink:#E1E8EC; --muted:#93A4AE; --line:#263A4A; --accent:#5FB6D4; --code:#13222D; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --paper:#0E1A23; --ink:#E1E8EC; --muted:#93A4AE; --line:#263A4A; --accent:#5FB6D4; --code:#13222D; color-scheme:dark; }
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:720px;margin:0 auto;padding:0 24px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font-size:.92rem}
+.top a{text-decoration:none;color:var(--muted)}
+.top a:hover{color:var(--ink)}
+.top .brand{font:600 1.1rem var(--serif);color:var(--ink)}
+.meta{font:600 .76rem/1.3 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:36px 0 12px}
+h1{font:700 clamp(2.2rem,5vw,3.2rem)/1.08 var(--serif);letter-spacing:-.02em;margin:0 0 16px}
+.dek{font:400 1.25rem/1.5 var(--serif);color:var(--muted);margin:0 0 28px}
+.hero{display:block;width:100%;margin:0 0 34px;border-radius:4px}
+.body{font:400 1.14rem/1.72 var(--serif)}
+.body h2{font:700 1.6rem/1.2 var(--serif);margin:2em 0 .5em}
+.body h3{font:600 1.25rem/1.3 var(--serif);margin:1.6em 0 .4em}
+.body p,.body ul,.body ol{margin:0 0 1.1em}
+.body img{max-width:100%;height:auto;border-radius:4px}
+.body figure{margin:1.6em 0}
+.body figcaption{font:400 .88rem/1.5 var(--sans);color:var(--muted);margin-top:8px}
+.body blockquote{margin:1.4em 0;padding:0 0 0 18px;border-left:3px solid var(--accent);color:var(--muted)}
+.body code{font:400 .88em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:2px 5px;border-radius:4px}
+.body pre{background:var(--code);padding:14px 16px;border-radius:6px;overflow-x:auto}
+.body pre code{background:none;padding:0}
+.body table{border-collapse:collapse;width:100%;font:400 .95rem/1.4 var(--sans);margin:0 0 1.2em}
+.body th,.body td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+.missing{color:var(--muted)}
+footer{margin:72px 0 0;padding:22px 0 44px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" aria-label="Site">
+    <a class="brand" href="index.html">Matt Hatami</a>
+    <a href="articles.html">← All writing</a>
+  </nav>
+  <article id="article"><p class="missing">Loading…</p></article>
+  <footer>© 2026 Matt Hatami</footer>
+</div>
+<script>
+(async()=>{
+  const el=document.getElementById("article"), slug=new URLSearchParams(location.search).get("slug");
+  try {
+    const a=(await Writing.load()).find(x=>x.slug===slug);
+    if (!a) throw new Error("not listed");
+    if (a.url){ location.replace(a.url); return; }
+    const r=await fetch(`articles/${encodeURIComponent(a.slug)}.md`,{cache:"no-cache"});
+    if (!r.ok) throw new Error("no file");
+    const esc=Writing.esc;
+    document.title=`${a.title} · Matt Hatami`;
+    el.innerHTML=`<p class="meta">${esc(Writing.fmtDate(a.date))}${a.minutes?` · ${a.minutes} min read`:""}</p>
+      <h1>${esc(a.title)}</h1>${a.dek?`<p class="dek">${esc(a.dek)}</p>`:""}
+      ${a.image?`<img class="hero" src="${esc(a.image)}" alt="">`:""}
+      <div class="body">${DOMPurify.sanitize(marked.parse(await r.text()))}</div>`;
+  } catch(e){
+    el.innerHTML=`<h1>Article not found</h1><p class="missing">This article is not available. <a href="articles.html">See all writing</a>.</p>`;
+  }
+})();
+</script>
+</body>
+</html>

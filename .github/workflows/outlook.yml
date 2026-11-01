@@ -1,22 +1,16 @@
-# Refreshes the globe's 5-day outlook from the newest ECMWF ensemble run and publishes the site
-# to GitHub Pages. ENS 00 and 12 UTC runs are complete in open data about 8 hours later.
-# Every 10 days or so update.py also rebuilds data/climate/ (about 40 minutes) and commits it.
-name: Update outlook
+# Refreshes the globe's past five days from the newest GFS analysis and publishes the site to
+# GitHub Pages. GFS 1 degree files for a cycle are complete about 4 hours after it (00, 06, 12, 18 UTC).
+name: Update globe data
 
 on:
   schedule:
-    - cron: "40 8,20 * * *"
+    - cron: "30 4,10,16,22 * * *"
   workflow_dispatch:
-    inputs:
-      force_climate:
-        description: Rebuild data/climate/ for today
-        type: boolean
-        default: false
   push:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -27,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -38,34 +32,20 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # past forecasts used for the model climate; reused when the season window moves
-      - uses: actions/cache/restore@v4
+      # decoded GFS times from earlier runs, so each run downloads only the newest one
+      - uses: actions/cache@v4
         with:
-          path: .cache/model_climate
-          key: model-climate-${{ github.run_id }}
-          restore-keys: model-climate-
+          path: .cache/recent
+          key: gfs-recent-${{ github.run_id }}
+          restore-keys: gfs-recent-
 
-      - id: update
-        run: python update.py ${{ inputs.force_climate && '--force-climate' || '' }}
-
-      - if: steps.update.outputs.climate_changed == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .cache/model_climate
-          key: model-climate-${{ github.run_id }}
-
-      - if: steps.update.outputs.climate_changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/climate
-          git commit -m "Rebuild local climate for $(date -u +%m-%d)" && git pull --rebase && git push || echo "Nothing to commit"
+      - run: python update.py
 
       - name: Assemble site
         run: |
           mkdir _site
-          cp index.html before_helene.html helene_viewer.html _site/
-          cp -r data _site/
+          cp *.html _site/
+          cp -r data articles assets _site/
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,0 +1,40 @@
+/* Magazine layout for writing (assets/writing.js). Uses the page's --ink, --muted, --line, --accent and --serif. */
+.w-head{border-bottom:3px solid var(--ink);padding-bottom:22px;margin-bottom:30px}
+.w-head h2{font:700 clamp(2.6rem,6vw,4.4rem)/1 var(--serif);letter-spacing:-.025em;margin:0 0 14px}
+.w-head p{font:400 1.15rem/1.55 var(--serif);color:var(--muted);margin:0;max-width:44rem}
+.w-mag{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) minmax(0,.95fr);gap:0}
+.w-mag.two{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+.w-mag.one{grid-template-columns:minmax(0,1fr)}
+.w-mag > *{padding:0 28px;border-left:1px solid var(--line)}
+.w-mag > :first-child{padding-left:0;border-left:0}
+.w-mag > :last-child{padding-right:0}
+.w-img{display:block;margin-bottom:18px;overflow:hidden;background:var(--line)}
+.w-img img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;transition:transform .5s}
+.w-img:hover img{transform:scale(1.02)}
+.w-meta{font:600 .74rem/1.3 var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.w-mag h3,.w-row h3{font:700 1.5rem/1.15 var(--serif);letter-spacing:-.01em;margin:0 0 12px}
+.w-mag h3 a,.w-row h3 a{text-decoration:none}
+.w-mag h3 a:hover,.w-row h3 a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.w-lead h3{font-size:clamp(1.9rem,3.6vw,2.9rem);line-height:1.08;letter-spacing:-.02em}
+.w-dek{font:400 1.05rem/1.6 var(--serif);color:var(--muted);margin:0 0 14px}
+.w-lead .w-dek{font-size:1.15rem}
+.w-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.w-tags span{font-size:.74rem;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.w-more{font-weight:600;font-size:.92rem;color:var(--accent);text-decoration:none}
+.w-more:hover{text-decoration:underline}
+.w-col{display:flex;flex-direction:column;gap:26px}
+.w-side{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:14px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.w-side:last-child{border-bottom:0}
+.w-side h3{font-size:1.2rem}
+.w-side .w-dek{font-size:.95rem;margin:0}
+.w-thumb{display:block}
+.w-thumb img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.w-row{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:28px;padding:28px 0;border-top:1px solid var(--line)}
+.w-row .w-thumb img{aspect-ratio:3/2}
+.w-empty{color:var(--muted)}
+@media (max-width:900px){
+  .w-mag,.w-mag.two{grid-template-columns:minmax(0,1fr)}
+  .w-mag > *{padding:0;border-left:0;border-top:1px solid var(--line);padding-top:26px;margin-top:26px}
+  .w-mag > :first-child{border-top:0;padding-top:0;margin-top:0}
+  .w-row{grid-template-columns:minmax(0,1fr) 110px;gap:16px}
+}

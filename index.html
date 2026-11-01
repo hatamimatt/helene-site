@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hydroclimate Extremes</title>
-<meta name="description" content="Research on extreme precipitation and hydroclimate extremes in the southeastern United States.">
+<title>Matt Hatami · Hydroclimate Extremes</title>
+<meta name="description" content="Matt Hatami, PhD student at the University of Florida: research on hydroclimate extremes and risk, with an interactive globe of the atmosphere behind extreme rain.">
+<link rel="stylesheet" href="assets/writing.css">
+<script src="assets/writing.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <style>
@@ -96,55 +98,78 @@ button{font:inherit;color:inherit}
 .event-card p{margin:0 0 10px;font-size:.88rem;color:#C3D2DA}
 .event-card a{font-weight:600;font-size:.9rem;color:var(--hero-accent);text-decoration:none}
 .event-card a:hover{text-decoration:underline}
-.gridkey{display:flex;flex-wrap:wrap;gap:4px 12px;margin:-6px 0 0;font-size:.74rem;color:var(--hero-muted)}
-.gridkey[hidden]{display:none}
-.gridkey i{display:inline-block;vertical-align:middle;margin-right:5px}
-.gridkey .ln{width:16px;border-top:2px solid #f3e3a1}
-.gridkey .dot{width:8px;height:8px;border-radius:50%;border:1px solid #081620}
-.event-card.grid{border-left-color:#f3e3a1}
-.event-card.grid .eyebrow{color:#f3e3a1}
-.event-card ul{list-style:none;margin:0 0 10px;padding:0;font-size:.84rem;color:#C3D2DA;display:flex;flex-direction:column;gap:3px}
-.event-card ul b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
-.event-card ol{margin:0;padding:0 0 0 18px;font-size:.8rem;color:#C3D2DA;display:flex;flex-direction:column;gap:2px}
-.event-card .small{font-size:.74rem;color:var(--hero-muted);margin:8px 0 0}
 .scroll-cue{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted);text-decoration:none}
 
 /* ---------- sections ---------- */
-.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
-section.block{padding:72px 0 8px}
-.block h2{font:600 clamp(1.7rem,3vw,2.2rem)/1.15 var(--serif);margin:0 0 8px;letter-spacing:-.01em}
-.block .intro{color:var(--muted);max-width:40rem;margin:0 0 28px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+section.block{padding:80px 28px 8px}
+.block > h2{font:600 clamp(1.8rem,3vw,2.4rem)/1.15 var(--serif);margin:0 0 8px;letter-spacing:-.01em}
+.block .intro{color:var(--muted);max-width:44rem;margin:0 0 28px}
+.block .intro a,.about a{color:var(--accent)}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px}
 .card .num{font:600 .78rem/1 var(--sans);color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
 .card h3{font:600 1.25rem/1.25 var(--serif);margin:10px 0 8px}
-.card p{margin:0;color:var(--muted);font-size:.94rem}
-.events{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px}
-.event{display:flex;flex-direction:column;justify-content:flex-end;min-height:240px;border-radius:10px;padding:22px;text-decoration:none;color:#E8F0F4;background:radial-gradient(circle at 70% 30%,rgba(232,98,52,.55),transparent 45%),radial-gradient(circle at 60% 40%,rgba(186,40,92,.55),transparent 30%),linear-gradient(160deg,#0f2a3d,#071520)}
-.event:hover h3{text-decoration:underline}
-.event .eyebrow{color:#F3A9C9;margin:0 0 6px}
-.event h3{font:600 1.6rem/1.15 var(--serif);margin:0 0 6px}
-.event p{margin:0;color:#C6D4DB;font-size:.94rem;max-width:30rem}
-.event.soon{background:var(--panel);color:var(--muted);border:1px dashed var(--line);justify-content:center}
-.event.soon h3{color:var(--ink);font-size:1.25rem}
-.event.soon .eyebrow{color:var(--muted)}
-.pubs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.pubs li{padding:16px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:4rem minmax(0,1fr);gap:16px}
-.pubs .yr{font:600 .95rem var(--sans);color:var(--muted)}
-.pubs .t{font:600 1.08rem/1.35 var(--serif);margin:0 0 3px}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.all-link{margin:34px 0 0;text-align:right}
+.all-link a{font-weight:600;color:var(--accent);text-decoration:none}
+.all-link a:hover{text-decoration:underline}
+
+/* LinkedIn feed: styled after LinkedIn's own feed, light in both themes */
+.li-section{margin-top:88px;padding:56px 0;background:#f4f2ee;color:#1d2226;font-family:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}
+.li-wrap{display:grid;grid-template-columns:260px minmax(0,560px);gap:24px;justify-content:center;align-items:start}
+.li-profile{background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(0,0,0,.08);overflow:hidden;text-align:center;padding:0 16px 18px;position:sticky;top:20px}
+.li-cover{height:62px;margin:0 -16px;background:linear-gradient(120deg,#0b3954,#1b6a88 55%,#6cc3e0)}
+.li-avatar{width:76px;height:76px;border-radius:50%;object-fit:cover;object-position:70% 42%;border:3px solid #fff;margin-top:-38px;background:#dde}
+.li-profile h2{font:600 1.1rem/1.3 inherit;margin:8px 0 4px;font-family:inherit}
+.li-headline{font-size:.82rem;line-height:1.4;color:rgba(0,0,0,.6);margin:0 0 6px}
+.li-loc{font-size:.75rem;color:rgba(0,0,0,.6);margin:0 0 14px}
+.li-follow{display:block;padding:7px 12px;border-radius:999px;background:#0a66c2;color:#fff;font-weight:600;font-size:.88rem;text-decoration:none}
+.li-follow:hover{background:#004182}
+.li-note{font-size:.74rem;color:rgba(0,0,0,.55);margin:12px 0 0}
+.li-feed{height:min(820px,82vh);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:2px;scrollbar-width:thin}
+.li-post{background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(0,0,0,.08);overflow:hidden;flex:none}
+.li-post iframe{display:block;width:100%;border:0}
+.li-more{flex:none;text-align:center;padding:14px;background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.li-more a{color:#0a66c2;font-weight:600;text-decoration:none;font-size:.9rem}
+
+.pub-group{font:600 .8rem/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:30px 0 4px}
+.pubs,.talks,.exp{list-style:none;margin:0;padding:0}
+.pubs{border-top:1px solid var(--line)}
+.pubs li,.talks li,.exp li{padding:15px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:5rem minmax(0,1fr);gap:16px}
+.yr{font:600 .9rem var(--sans);color:var(--muted);font-variant-numeric:tabular-nums}
+.pubs .t{font:600 1.08rem/1.35 var(--serif);margin:0 0 4px}
+.pubs .t a{text-decoration:none}
+.pubs .t a:hover{text-decoration:underline}
 .pubs .m{margin:0;font-size:.9rem;color:var(--muted)}
-.pubs .links{margin-top:6px;display:flex;gap:14px;font-size:.85rem}
-.pubs .links a{color:var(--accent);text-decoration:none}
-.about{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:36px;align-items:start}
-.about p{margin:0 0 14px;max-width:38rem}
-.contact{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.contact a{color:var(--accent);text-decoration:none}
-.placeholder{font-size:.8rem;color:var(--mark);margin:0 0 18px}
-footer{margin:72px 0 0;padding:20px 0 40px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.pubs .m b{color:var(--ink);font-weight:600}
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.proj{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column}
+.proj-tags{font:600 .7rem/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+.proj h3{font:600 1.1rem/1.3 var(--serif);margin:0 0 8px}
+.proj p{margin:0 0 12px;font-size:.92rem;color:var(--muted)}
+.proj .proj-links{margin:auto 0 0;display:flex;gap:14px;font-size:.88rem;font-weight:600}
+.proj-links a,.talks a{color:var(--accent);text-decoration:none}
+.proj-links a:hover,.talks a:hover{text-decoration:underline}
+.talks{border-top:1px solid var(--line)}
+.talks a{font:600 1.05rem/1.35 var(--serif)}
+.talks p,.exp p{margin:3px 0 0;font-size:.9rem;color:var(--muted)}
+.about{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:44px;align-items:start}
+.about p{margin:0 0 14px;max-width:40rem}
+.sub{font:600 .8rem/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:28px 0 6px}
+.photo{display:block;width:100%;border-radius:10px;aspect-ratio:4/3;object-fit:cover}
+.about-side .sub{margin-top:22px}
+.contact{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.contact a{color:var(--accent);text-decoration:none;font-weight:500}
+.contact a:hover{text-decoration:underline}
+.addr{font-size:.88rem;color:var(--muted);margin-top:14px}
+footer{margin:80px auto 0;padding:22px 28px 44px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
 
 @media (max-width:900px){
   .nav ul{display:none}
-  .cards,.events,.about{grid-template-columns:minmax(0,1fr)}
+  .cards,.about{grid-template-columns:minmax(0,1fr)}
+  .li-wrap{grid-template-columns:minmax(0,1fr);max-width:560px}
+  .li-profile{position:static}
 }
 @media (max-width:760px){
   .nav{padding:14px 16px}
@@ -178,21 +203,23 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
   <canvas id="trails" aria-hidden="true"></canvas>
 
   <nav class="nav" aria-label="Main">
-    <!-- Replace with your name -->
-    <a class="brand" href="#top">Your Name</a>
+    <a class="brand" href="#top">Matt Hatami</a>
     <ul>
       <li><a href="#research">Research</a></li>
-      <li><a href="#events">Event replays</a></li>
+      <li><a href="#writing">Writing</a></li>
+      <li><a href="#linkedin">LinkedIn</a></li>
       <li><a href="#publications">Publications</a></li>
+      <li><a href="#projects">Projects</a></li>
       <li><a href="#about">About</a></li>
+      <li><a href="assets/CV_HatamiMatt.pdf" target="_blank" rel="noopener">CV</a></li>
     </ul>
   </nav>
 
   <div class="hero-inner" id="heroInner">
     <div class="copy">
-      <p class="eyebrow">PhD research · Hydroclimate extremes</p>
+      <p class="eyebrow">PhD student · University of Florida</p>
       <h1>Following the water behind extreme rain</h1>
-      <p class="lede">I study what drives extreme precipitation in the southeastern United States: where the moisture comes from, which storms deliver it, and how the risk is changing. <span id="ledeData">The globe shows the latest ECMWF ensemble forecast: the chance of extreme rain anywhere on Earth over the next five days.</span></p>
+      <p class="lede">I study hydroclimate extremes (floods, droughts, extreme precipitation and heatwaves) and how to keep infrastructure resilient to them, in the Climate Resilience Lab at the University of Florida. <span id="ledeData">The globe shows the last five days of the atmosphere behind extreme rain.</span></p>
       <div class="cta">
         <button class="btn primary" id="ctaFly" type="button">Fly to the Southeast</button>
         <a class="btn" href="#research">Read about my research</a>
@@ -216,8 +243,6 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
         <div class="ticks" id="lgTicks"></div>
       </div>
       <label class="switch"><input type="checkbox" id="flow" checked> <span id="flowLabel">Moving lines</span></label>
-      <label class="switch"><input type="checkbox" id="grid" checked> <span>Power grid, 7 Southeast states</span></label>
-      <div class="gridkey" id="gridKey" hidden></div>
       <div class="navbtns">
         <button class="btn" id="goSE" type="button">Southeast US</button>
         <button class="btn" id="goGlobe" type="button">Whole globe</button>
@@ -237,118 +262,170 @@ if (location.protocol === "file:") addEventListener("DOMContentLoaded", () => {
     <a href="helene_viewer.html">Open the replay →</a>
   </aside>
 
-  <aside class="event-card grid" id="gridCard" data-show="false" aria-live="polite">
-    <p class="eyebrow">Grid exposure · next 5 days</p>
-    <h3>Power assets under extreme rain risk</h3>
-    <div id="gridSummary"><p>Loading the grid…</p></div>
-  </aside>
-
   <a class="scroll-cue" href="#research">Scroll ↓</a>
 </section>
 
-<main class="wrap">
-  <!-- Draft text below: replace with your own research themes, papers and bio -->
-  <section class="block" id="research">
+<main>
+  <section class="block wrap" id="research">
     <h2>Research</h2>
-    <p class="intro">Extreme rain comes from a chain of ingredients: a moisture supply, a storm that lifts the air, and the land the water falls on. My work follows that chain.</p>
-    <p class="placeholder">Draft themes. Replace with your own.</p>
+    <p class="intro">My research focuses on hydroclimate extremes and risk: how floods, droughts, extreme precipitation and heatwaves arise, and how infrastructure and ecosystems can stay resilient to them under deep uncertainty.</p>
     <div class="cards">
       <article class="card">
-        <span class="num">Theme 1</span>
-        <h3>What makes rain extreme</h3>
-        <p>Separating the roles of moisture supply, lift, and storm organization in the heaviest daily and hourly rainfall.</p>
+        <span class="num">Extremes</span>
+        <h3>Characterizing and modeling hydroclimatic extremes</h3>
+        <p>Floods, droughts, extreme precipitation and heatwaves: the processes behind them and how to model them, with a focus on the southeastern United States.</p>
       </article>
       <article class="card">
-        <span class="num">Theme 2</span>
-        <h3>The storms that deliver it</h3>
-        <p>How tropical cyclones, atmospheric rivers, fronts and thunderstorm complexes each contribute to extremes in the Southeast.</p>
+        <span class="num">Decisions</span>
+        <h3>Decisions under deep uncertainty</h3>
+        <p>Stochastic decision frameworks that improve the resilience of infrastructure and ecosystems when the future climate cannot be pinned down.</p>
       </article>
       <article class="card">
-        <span class="num">Theme 3</span>
-        <h3>A changing risk</h3>
-        <p>Trends in extreme precipitation and what return levels may look like in a warmer climate.</p>
+        <span class="num">Vulnerability</span>
+        <h3>Climate vulnerability across sectors</h3>
+        <p>Process-based and ensemble approaches to assess climate vulnerability across water, energy, transportation, agriculture and public health.</p>
       </article>
     </div>
   </section>
 
-  <section class="block" id="events">
-    <h2>Event replays</h2>
-    <p class="intro">Interactive reconstructions of high-impact events from reanalysis data. Press play, switch layers, and chart the rain at any point.</p>
-    <div class="events">
-      <a class="event" href="helene_viewer.html">
-        <p class="eyebrow">September 2024</p>
-        <h3>Hurricane Helene</h3>
-        <p>A landfalling major hurricane, a rain event ahead of it, and a cutoff low combined to cause catastrophic flooding in the southern Appalachians.</p>
-      </a>
-      <a class="event soon" href="before_helene.html">
-        <p class="eyebrow">Helene · 8–26 September 2024</p>
-        <h3>Before Helene</h3>
-        <p>The weeks leading up to landfall: which ingredients were already unusual against 34 years of ERA5, and how early.</p>
-      </a>
+  <section class="block wrap" id="writing">
+    <header class="w-head">
+      <h2>Field notes.</h2>
+      <p>Notes and interactive pieces on extreme rainfall, hydroclimate risk, and the data and tools behind them.</p>
+    </header>
+    <div id="writingMag"><p class="w-empty">Loading…</p></div>
+    <p class="all-link"><a href="articles.html">All writing →</a></p>
+  </section>
+
+  <section class="li-section" id="linkedin" aria-labelledby="liTitle">
+    <div class="wrap li-wrap">
+      <aside class="li-profile">
+        <div class="li-cover"></div>
+        <img class="li-avatar" src="assets/images/presenting.jpg" alt="Matt Hatami">
+        <h2 id="liTitle">Matt Hatami</h2>
+        <p class="li-headline">PhD Student @ UF | Extreme Rainfall &amp; Climate Risk</p>
+        <p class="li-loc">Gainesville, Florida</p>
+        <a class="li-follow" id="liFollow" href="https://www.linkedin.com/in/hatamimatt/" target="_blank" rel="noopener">View profile on LinkedIn</a>
+        <p class="li-note">Posts from my LinkedIn feed. Scroll the feed to see more.</p>
+      </aside>
+      <div class="li-feed" id="liFeed" tabindex="0" aria-label="LinkedIn posts, scrollable"></div>
     </div>
   </section>
 
-  <section class="block" id="publications">
+  <section class="block wrap" id="publications">
     <h2>Publications</h2>
-    <p class="placeholder">Placeholder entries. Replace with your papers.</p>
-    <ul class="pubs">
-      <li><span class="yr">2026</span><div><p class="t">Title of your paper on extreme precipitation in the southeastern United States</p><p class="m">You, Coauthor, and Advisor. <i>Journal Name</i>, in review.</p><div class="links"><a href="#">PDF</a><a href="#">Code</a></div></div></li>
-      <li><span class="yr">2025</span><div><p class="t">Title of an earlier paper</p><p class="m">You and Coauthor. <i>Journal Name</i>, 00, 000–000.</p><div class="links"><a href="#">DOI</a><a href="#">PDF</a><a href="#">Data</a></div></div></li>
+    <p class="intro">Recent papers, abstracts and reports. The full, up-to-date list is on <a href="https://scholar.google.com/citations?user=N0m5rRUAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a>.</p>
+    <h3 class="pub-group">Journal articles</h3>
+    <ol class="pubs">
+      <li><span class="yr">2026</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:Tyk-4Ss8FVUC" target="_blank" rel="noopener">A Comprehensive Geospatial Dataset for Risk Assessments of Natural Hazards in the United States</a></p><p class="m"><b>M. Hatami Goloujeh</b>, E. C. Kurter, J. Imran · <i>Geoscience Data Journal</i> 13(4), e70105</p></div></li>
+      <li><span class="yr">2026</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:IjCSPb-OGe4C" target="_blank" rel="noopener">Estimating opium use prevalence at the national and provincial levels in Iran: a modelling study</a></p><p class="m">S. Nemati, <b>M. Hatami Goloujeh</b>, H. Poustchi, M. Hadji, H. Rashidian, et al. · <i>Scientific Reports</i> 16, 8430</p></div></li>
+      <li><span class="yr">2026</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:Y0pCki6q_DkC" target="_blank" rel="noopener">Projected Global Lung Cancer Burden Linked to Waterpipe Use: Estimates for 2025–2050</a></p><p class="m">S. Nemati, <b>M. Hatami Goloujeh</b>, S. Abdi, N. Taheri, N. D. Freedman, et al. · <i>International Journal of Cancer</i> 159, 122</p></div></li>
+    </ol>
+    <h3 class="pub-group">Conference abstracts</h3>
+    <ol class="pubs">
+      <li><span class="yr">2024</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:2osOgNQ5qMEC" target="_blank" rel="noopener">Advancing Camera-Based Monitoring for Operational Hydrologic Applications</a></p><p class="m">E. Goharian, S. N. Young, J. S. Horsburgh, S. Khan, S. Neupane, R. Issa, et al. · <i>AGU Fall Meeting 2024</i>, H13C-1039</p></div></li>
+      <li><span class="yr">2024</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:d1gkVwhDpl0C" target="_blank" rel="noopener">Harnessing Heterogeneous Sources of Data and Artificial Intelligence for Hydrologic Monitoring</a></p><p class="m">E. Goharian, S. M. H. Erfani, <b>M. Hatami Goloujeh</b> · <i>EGU General Assembly 2024</i>, EGU24-4390</p></div></li>
+    </ol>
+    <h3 class="pub-group">Theses and reports</h3>
+    <ol class="pubs">
+      <li><span class="yr">2024</span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:UeHWp8X0CEIC" target="_blank" rel="noopener">Applications of Machine Learning and Remote Sensing in Disaster Management Cycle</a></p><p class="m"><b>M. Hatami</b> · MSc thesis, Politecnico di Milano</p></div></li>
+      <li><span class="yr">2023</span><div><p class="t"><a href="https://hatamimatt.github.io/assets/reports/GPMReport.pdf" target="_blank" rel="noopener">Geospatial Data Processing to Support Seismic Emergency Management: WebGIS Services to Support Locational Choices of Shelters</a></p><p class="m"><b>M. Hatami Goloujeh</b>, A. G. M. E. Salem, A. I. Y. S. Elmahdy, A. A. A. M. Hassanien, et al. · Project report, Politecnico di Milano</p></div></li>
+      <li><span class="yr">2022</span><div><p class="t"><a href="https://hatamimatt.github.io/assets/reports/GETUSpdf.pdf" target="_blank" rel="noopener">Geo-Engineering Techniques for Unstable Slopes: Shallow Landslide Simulator Case</a></p><p class="m"><b>M. Hatami Goloujeh</b>, A. G. M. E. Salem, Q. L. T. Nhu, K. Zhengyun, S. Korucu, S. Neisani · Project report, Politecnico di Milano</p></div></li>
+      <li><span class="yr"></span><div><p class="t"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=N0m5rRUAAAAJ&amp;citation_for_view=N0m5rRUAAAAJ:u5HHmVD_uO8C" target="_blank" rel="noopener">Influence of the Alkaline Activator Molar Ratio on the Rheological Properties of Slag-based Geopolymer Concrete</a></p><p class="m"><b>M. Hatami Goloujeh</b>, S. Rahmati</p></div></li>
+    </ol>
+  </section>
+
+  <section class="block wrap" id="projects">
+    <h2>Projects and tools</h2>
+    <p class="intro">Dashboards, data pipelines and tools from my research and coursework. More are listed in the <a href="https://www.linkedin.com/in/hatamimatt/details/projects/" target="_blank" rel="noopener">projects section of my LinkedIn profile</a>.</p>
+    <div class="proj-grid">
+      <article class="proj"><p class="proj-tags">GIS · Dashboard</p><h3>Coastal Vulnerability Dashboard</h3><p>Interactive GIS dashboard for coastal vulnerability assessment using multi-criteria decision-making and probabilistic principal component analysis.</p><p class="proj-links"><a href="https://southcarolina.maps.arcgis.com/apps/dashboards/fc7eef0cb3b844dea1dbbb7500b5dffd" target="_blank" rel="noopener">Dashboard ↗</a><a href="https://storymaps.arcgis.com/stories/970c3abd8da8438192aabd3132bcb2b3" target="_blank" rel="noopener">StoryMap ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Earth Engine · Python · Machine learning</p><h3>End-to-End Flood Dataset Pipeline</h3><p>Extracts flood extents from Sentinel-1 SAR before and after events with the SPIDER framework, then cuts georeferenced 256×256 chips into balanced training sets for flood detection models.</p><p class="proj-links"><a href="https://github.com/hatamimatt/EndtoEnd_FloodDataset_Pipeline" target="_blank" rel="noopener">GitHub ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Earth Engine · Land cover</p><h3>NLCD Land Cover Analysis Tool</h3><p>Cloud-based tool that computes land cover shares (wetlands, forests, developed land and more) for states, counties or tracts in minutes instead of hours.</p><p class="proj-links"><a href="https://code.earthengine.google.com/607476fcfe540558f28579a6801d0b26" target="_blank" rel="noopener">Open tool ↗</a><a href="https://youtu.be/XMZxnqovWe4" target="_blank" rel="noopener">Demo ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Streamlit · Statistics</p><h3>Interactive Distribution Playground</h3><p>Web app for exploring probability distributions in real time: adjust parameters, compare distributions and see the mathematics behind them.</p><p class="proj-links"><a href="https://distributionplaygroundpy-lrxuyld3rdswjs4ucblhxn.streamlit.app/" target="_blank" rel="noopener">Live app ↗</a><a href="https://youtu.be/p3gCAjmaiPU" target="_blank" rel="noopener">Demo ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Machine learning · Remote sensing</p><h3>Transfer Learning with the Prithvi Foundation Model</h3><p>Fine-tuning a geospatial foundation model on remote sensing data for environmental monitoring.</p><p class="proj-links"><a href="https://hatamimatt.github.io/assets/reports/csce885.pdf" target="_blank" rel="noopener">Report (PDF) ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">ArcGIS Pro · WebGIS</p><h3>WebGIS for Seismic Shelter Planning</h3><p>Geospatial analysis to optimize emergency shelter locations in Amatrice, Italy.</p><p class="proj-links"><a href="https://hatamimatt.github.io/assets/reports/GPMReport.pdf" target="_blank" rel="noopener">Report ↗</a><a href="https://hatamimatt.github.io/assets/reports/GPEMLight.pdf" target="_blank" rel="noopener">Slides ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Geology · Photogrammetry · Geophysics</p><h3>Shallow Landslide Risk Assessment</h3><p>Geological, photogrammetric and geophysical methods combined to investigate rainfall-induced landslides.</p><p class="proj-links"><a href="https://hatamimatt.github.io/assets/reports/GETUSpdf.pdf" target="_blank" rel="noopener">Report ↗</a></p></article>
+      <article class="proj"><p class="proj-tags">Risk assessment</p><h3>Garfagnana Valley Risk Assessment</h3><p>Systematic assessment of hazards, vulnerability and exposure for a whole valley.</p><p class="proj-links"><a href="https://hatamimatt.github.io/assets/reports/garfananaProject.pdf" target="_blank" rel="noopener">Report ↗</a></p></article>
+    </div>
+  </section>
+
+  <section class="block wrap" id="talks">
+    <h2>Talks</h2>
+    <ul class="talks">
+      <li><span class="yr">Jan 2025</span><div><a href="https://youtu.be/B2mcQwOKGIg" target="_blank" rel="noopener">Transfer learning in remote sensing: CSCE 885 and GEOG 755 project</a><p>University of South Carolina</p></div></li>
+      <li><span class="yr">Dec 2024</span><div><a href="https://youtu.be/V2PTMmq3l-k" target="_blank" rel="noopener">Introduction to Google Earth Engine</a><p>University of South Carolina</p></div></li>
+      <li><span class="yr">Nov 2024</span><div><a href="https://youtu.be/-nvML6FCT6Q" target="_blank" rel="noopener">SafeGuard.ai: IBM Call for Code pitch</a><p>University of South Carolina · 3rd place among 100+ students statewide</p></div></li>
+      <li><span class="yr">Oct 2024</span><div><a href="https://youtu.be/dJ07ccRr4yk" target="_blank" rel="noopener">Coastal risk and vulnerability</a><p>SCARC 2024 conference, South Carolina · oral session</p></div></li>
+      <li><span class="yr">May 2024</span><div><a href="https://youtu.be/Iwni2b6RGhs" target="_blank" rel="noopener">Deep learning and remote sensing in disaster management: MSc thesis defense</a><p>Politecnico di Milano</p></div></li>
+      <li><span class="yr">Feb 2023</span><div><a href="https://youtu.be/wirIVdNAxLg" target="_blank" rel="noopener">Landslide risk and geo-engineering techniques for unstable slopes</a><p>Politecnico di Milano</p></div></li>
     </ul>
   </section>
 
-  <section class="block" id="about">
+  <section class="block wrap" id="about">
     <h2>About</h2>
     <div class="about">
       <div>
-        <p class="placeholder">Placeholder bio. Replace with your own.</p>
-        <p>I am a PhD candidate studying hydroclimate extremes, with a focus on extreme precipitation in the southeastern United States. I work with reanalysis, observations and climate model output to understand the processes behind the heaviest rain.</p>
-        <p>Before graduate school I … (your background here).</p>
+        <p>I am a PhD student at the <a href="https://www.ufl.edu/" target="_blank" rel="noopener">University of Florida</a>, in the Climate Resilience Lab of <a href="https://nassernajibi.github.io/lab/" target="_blank" rel="noopener">Dr. Nasser Najibi’s research group</a> in the Department of Agricultural and Biological Engineering.</p>
+        <p>I began my PhD in Civil Engineering at the University of South Carolina in the iWERS lab with Dr. Erfan Goharian, alongside graduate coursework in computer science, and moved to UF when my advisor left. Before that, I spent four months at the University of Groningen building an agent-based model of human behavior during cascading disasters.</p>
+        <p>I earned an MSc in Civil Engineering for Risk Mitigation at Politecnico di Milano, with a thesis on deep learning and remote sensing in disaster management, and a BSc in Civil Engineering at Imam Khomeini International University, where river hydrology and hydraulics started my interest in flood risk.</p>
+        <h3 class="sub">Experience</h3>
+        <ul class="exp">
+          <li><span class="yr">2025–</span><div><b>Geospatial Application Development Intern</b>, South Carolina Department of Transportation<p>Web GIS applications in ArcGIS Experience Builder, with custom React widgets and real-time data APIs.</p></div></li>
+          <li><span class="yr">2023</span><div><b>Geospatial Data Scientist Intern</b>, GEOAPP, Florence, Italy<p>A QGIS plugin that finds unstable ground in mining areas, with machine learning to automate routine processing.</p></div></li>
+        </ul>
       </div>
-      <ul class="contact">
-        <li><a href="#">Email</a></li>
-        <li><a href="#">Google Scholar</a></li>
-        <li><a href="#">GitHub</a></li>
-        <li><a href="#">CV (PDF)</a></li>
-      </ul>
+      <aside class="about-side">
+        <img class="photo" src="assets/images/presenting.jpg" alt="Matt Hatami presenting his MSc thesis at Politecnico di Milano" loading="lazy">
+        <h3 class="sub">Get in touch</h3>
+        <ul class="contact">
+          <li><a href="mailto:HatamiMatt@gmail.com">HatamiMatt@gmail.com</a></li>
+          <li><a href="https://www.linkedin.com/in/hatamimatt/" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li><a href="https://github.com/HatamiMatt" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://scholar.google.com/citations?user=N0m5rRUAAAAJ&amp;hl=en" target="_blank" rel="noopener">Google Scholar</a></li>
+          <li><a href="assets/CV_HatamiMatt.pdf" target="_blank" rel="noopener">CV (PDF)</a></li>
+        </ul>
+        <p class="addr">Department of Agricultural and Biological Engineering<br>University of Florida, 1741 Museum Road<br>Gainesville, FL 32611</p>
+      </aside>
     </div>
   </section>
 
-  <footer id="footer">Globe data: ECMWF ensemble forecasts (ECMWF open data, CC BY 4.0) and ERA5 reanalysis (Copernicus Climate Change Service). Coastlines and borders: Natural Earth via world-atlas and us-atlas. Power grid: transmission lines, substations and data centres © OpenStreetMap contributors (ODbL); power plants from EIA-860M (US Energy Information Administration).</footer>
+  <footer class="wrap" id="footer">© 2026 Matt Hatami. Globe data: NOAA GFS analyses (public domain) and ERA5 reanalysis (Copernicus Climate Change Service). Coastlines and borders: Natural Earth via world-atlas and us-atlas.</footer>
 </main>
 
 <script>
 const GEO_CDN = "https://cdn.jsdelivr.net/npm/";
-const SE = {lam:-84, phi:31, z:2.4};
+const SE = {lam:-84, phi:31, w:20, h:13};  // centre and size (degrees) of the Southeast view: Texas border to the Atlantic, Gulf to Virginia
 const ASHEVILLE = [-82.55, 35.6];
 const DEG = 180/Math.PI, RAD = Math.PI/180;
 
-/* Two datasets share the globe: the latest ECMWF ensemble outlook (prepare_now.py) and Helene in ERA5 (prepare_globe.py) */
+/* Two datasets share the globe: the past five days from GFS analyses (prepare_recent.py) and Helene in ERA5 (prepare_globe.py) */
 const DATASETS = {
-  now: {label:"Next 5 days", dir:"data/now/", flow:["u850","v850"], flowK:0.012, flowMin:9,
-    flowLabel:"Moving lines: 850 hPa wind, one ensemble member", defaultLayer:"p72", calibratedLayer:"plocal",  // the locally extreme layer leads once it is calibrated to the model climate
-    lede:"The globe shows the latest ECMWF ensemble forecast: where the next five days could bring extreme rain, as a chance from 50 forecasts.",
+  recent: {label:"Past 5 days", dir:"data/recent/", flow:["ivtu","ivtv"], flowK:0.00035, flowMin:900,
+    flowLabel:"Moving lines show vapor transport", defaultLayer:"ivt",
+    lede:"The globe shows the last five days of the atmosphere behind extreme rain: where moisture is flowing, how much the air holds, and where it is raining.",
     layers:{
-      plocal:{label:"Locally extreme", name:"Chance of 3-day rain above the local 1-in-100 level", unit:"", cmap:"prob", range:[0,1], needs:["plocal","q99","base"], pct:true, still:true, local:true},
-      p72: {label:"3-day extreme", name:"Chance of at least 100 mm in any 3 days", unit:"", cmap:"prob", range:[0,1], needs:["p72"], pct:true, still:true},
-      p24: {label:"Daily extreme", name:"Chance of at least 50 mm in the 24 hours", unit:"", cmap:"prob", range:[0,1], needs:["p24"], pct:true},
-      rain:{label:"Rain (mean)", name:"Ensemble-mean rain in the 24 hours", unit:"mm", cmap:"rain", range:[0,100], needs:["rain24"], inches:true}
+      ivt: {label:"Vapor transport", name:"Integrated vapor transport", unit:"kg m⁻¹ s⁻¹", cmap:"ivt", range:[0,2000], needs:["ivtu","ivtv"], vec:["ivtu","ivtv"]},
+      pw:  {label:"Moisture", name:"Precipitable water", unit:"mm", cmap:"pw", range:[10,75], needs:["pw"]},
+      wind:{label:"Wind 850 hPa", name:"Wind speed at 850 hPa (about 1.5 km up)", unit:"m/s", cmap:"wind", range:[0,40], needs:["u850","v850"], vec:["u850","v850"]},
+      rain:{label:"Rain", name:"Rain in the past 6 hours", unit:"mm", cmap:"rain", range:[0,50], needs:["rain6"], inches:true}
     }},
   helene: {label:"Helene 2024", dir:"data/globe/", flow:["ivtu","ivtv"], flowK:0.00035, flowMin:900,
     flowLabel:"Moving lines show vapor transport", defaultLayer:"ivt", start:"2024-09-27T00:00",
     lede:"Switch back to the forecast any time; this view replays the week of Hurricane Helene, September 2024, in ERA5.",
     layers:{
-      ivt: {label:"Vapor transport", name:"Integrated vapor transport", unit:"kg m⁻¹ s⁻¹", cmap:"ivt", range:[0,2000], needs:["ivtu","ivtv"]},
+      ivt: {label:"Vapor transport", name:"Integrated vapor transport", unit:"kg m⁻¹ s⁻¹", cmap:"ivt", range:[0,2000], needs:["ivtu","ivtv"], vec:["ivtu","ivtv"]},
       pw:  {label:"Moisture", name:"Precipitable water", unit:"mm", cmap:"pw", range:[10,75], needs:["pw"]},
       rain:{label:"Rain", name:"Rain in the past 6 hours", unit:"mm", cmap:"rain", range:[0,50], needs:["rain6"], inches:true}
     }}
 };
-let DS = DATASETS.now, LAYERS = DS.layers;
+let DS = DATASETS.recent, LAYERS = DS.layers;
 /* colour maps shared with helene_viewer.html: [fraction, [r,g,b,alpha]] */
 const CMAPS = {
   rain:[[0,[120,170,230,0]],[0.012,[120,170,230,0]],[0.03,[110,165,230,.55]],[0.12,[45,110,215,.8]],[0.3,[50,180,120,.9]],[0.5,[245,215,60,.95]],[0.7,[240,110,40,1]],[0.87,[205,30,90,1]],[1,[245,170,245,1]]],
   pw:[[0,[125,95,62,.7]],[0.3,[196,176,118,.75]],[0.55,[88,165,138,.8]],[0.75,[42,118,188,.85]],[0.9,[62,62,170,.9]],[1,[190,82,200,.95]]],
   ivt:[[0,[0,0,0,0]],[0.11,[0,0,0,0]],[0.13,[248,228,120,.55]],[0.3,[248,178,62,.8]],[0.5,[232,98,52,.9]],[0.72,[186,40,92,.95]],[1,[120,42,165,1]]],
+  wind:[[0,[0,0,0,0]],[0.2,[0,0,0,0]],[0.3,[120,200,220,.5]],[0.5,[80,170,230,.8]],[0.7,[150,110,230,.9]],[0.85,[230,90,170,.95]],[1,[255,200,140,1]]],
   prob:[[0,[0,0,0,0]],[0.04,[0,0,0,0]],[0.06,[150,200,240,.55]],[0.25,[90,150,230,.8]],[0.5,[150,90,220,.9]],[0.75,[220,60,150,.95]],[1,[255,190,120,1]]]
 };
 const LUT = {};
@@ -365,8 +442,8 @@ for (const [k, stops] of Object.entries(CMAPS)) {
 
 const $ = id => document.getElementById(id);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const S = { ds:"now", metas:{}, meta:null, raw:{}, layer:"p72", flow:!reduceMotion, t:0, playing:false,
-  lam:-72, phi:22, z:1, auto:!reduceMotion, dragging:false, fly:null, dirty:true, hover:null, grid:true };
+const S = { ds:"recent", metas:{}, meta:null, raw:{}, layer:"ivt", flow:!reduceMotion, t:0, playing:false,
+  lam:-72, phi:22, z:1, auto:!reduceMotion, dragging:false, fly:null, dirty:true, hover:null };
 const GEO = {};
 
 /* ---------- layout ---------- */
@@ -440,13 +517,13 @@ function frameArr(name, out){
   }
   return out;
 }
-let FIELD=new Float32Array(NCELL), U=new Float32Array(NCELL), Vv=new Float32Array(NCELL);
+let FIELD=new Float32Array(NCELL), TMP=new Float32Array(NCELL), U=new Float32Array(NCELL), Vv=new Float32Array(NCELL);
 S.fieldKey=""; S.flowKey="";
 function ensureField(){
   const L=LAYERS[S.layer], key=S.layer+S.t;
   if (!S.meta || !L.needs.every(n=>raw(n))) return false;
   if (S.fieldKey===key) return true;
-  if (S.layer==="ivt"){ ensureFlow(); for (let i=0;i<NCELL;i++) FIELD[i]=Math.hypot(U[i],Vv[i]); }
+  if (L.vec){ frameArr(L.vec[0],FIELD); frameArr(L.vec[1],TMP); for (let i=0;i<NCELL;i++) FIELD[i]=Math.hypot(FIELD[i],TMP[i]); }
   else frameArr(L.needs[0], FIELD);
   S.fieldKey=key; return true;
 }
@@ -543,7 +620,6 @@ function draw(){
   g=ctx.createRadialGradient(cx,cy,R*0.55,cx,cy,R);
   g.addColorStop(0,"rgba(3,10,16,0)"); g.addColorStop(1,"rgba(3,10,16,.5)");
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.fill();
-  drawGrid();
   // Asheville marker when zoomed in
   const a=S.ds==="helene"&&S.z>1.4&&fwd(...ASHEVILLE);
   if (a){
@@ -556,178 +632,6 @@ function draw(){
   // show the event card when the Southeast fills the view
   const near=S.ds==="helene" && d3.geoDistance([S.lam,S.phi],[SE.lam,SE.phi])*DEG<14 && S.z>1.4;
   $("eventCard").dataset.show=String(near);
-  const nearSE=d3.geoDistance([S.lam,S.phi],[SE.lam,SE.phi])*DEG<14 && S.z>1.4;
-  $("gridCard").dataset.show=String(S.ds==="now" && S.grid && !!GRID && nearSE);
-}
-
-/* ---------- power grid of the Southeast (prepare_grid.py) and its exposure to the forecast ---------- */
-const GRID_Z=1.4, EXPOSED=0.2;  // drawn when zoomed in; "exposed" = at least 20% chance of locally extreme rain (about 10x usual)
-const FUEL={gas:["Gas","#e9a23b"],coal:["Coal","#9a9a9a"],nuclear:["Nuclear","#c77dff"],hydro:["Hydro","#4cc9f0"],solar:["Solar","#ffd60a"],
-  wind:["Wind","#80ed99"],oil:["Oil","#c08497"],battery:["Battery","#ff70a6"],bio:["Biomass","#90be6d"],other:["Other","#ced4da"]};
-// voltage classes, highest first: colour, width (css px) and the scale (css px per degree) from which each appears
-const LINE_CLASSES=[
-  {k:"500", label:"500 kV",     color:"#fff1a8", w:2.1, from:0},
-  {k:"230", label:"230–345 kV", color:"#f39b4a", w:1.3, from:20},
-  {k:"115", label:"115–161 kV", color:"#b9a3ff", w:1.0, from:40},
-  {k:"69",  label:"44–99 kV",   color:"#86d1ab", w:0.8, from:80}];
-const CELL=0.25;  // degrees, for the hover index of line segments
-let GRID=null, GRID_PENDING=null;
-const LINES={}, LINES_PENDING={};
-function loadGrid(){
-  return GRID_PENDING ||= fetch("data/grid/grid.json").then(r=>{ if (!r.ok) throw 0; return r.json(); }).then(g=>{
-    g.fuelKeys=g.fuels; GRID=g; updateExposure(); updateGridKey(true); S.dirty=true;
-  }).catch(()=>{ GRID_PENDING=null; });
-}
-function loadLines(k){
-  return LINES_PENDING[k] ||= fetch(`data/grid/lines_${k}.json`).then(r=>{ if (!r.ok) throw 0; return r.json(); }).then(g=>{
-    // per line: bounding-circle centre and radius (degrees) to skip lines off screen, and a cell index for hover
-    const n=g.lines.length, cx=new Float32Array(n), cy=new Float32Array(n), rad=new Float32Array(n), idx=new Map();
-    g.lines.forEach((a,i)=>{
-      let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
-      for (let j=2;j<a.length;j+=2){ const x=a[j], y=a[j+1]; if (x<x0) x0=x; if (x>x1) x1=x; if (y<y0) y0=y; if (y>y1) y1=y;
-        const key=Math.floor(x/CELL)*4096+Math.floor(y/CELL), list=idx.get(key);
-        if (!list) idx.set(key,[i]); else if (list[list.length-1]!==i) list.push(i); }
-      cx[i]=(x0+x1)/2; cy[i]=(y0+y1)/2; rad[i]=Math.hypot((x1-x0)/2*Math.cos(cy[i]*RAD),(y1-y0)/2);
-    });
-    LINES[k]={...g, cx, cy, rad, idx}; S.dirty=true;
-  }).catch(()=>{ delete LINES_PENDING[k]; });
-}
-// detail follows how many css pixels a degree takes on screen
-const pxDeg=()=>V.R*RAD/V.dpr;
-const visibleClasses=()=>LINE_CLASSES.filter(c=>pxDeg()>=c.from);
-const minPlantMw=()=>{ const k=pxDeg(); return k<25?500:k<45?100:k<80?20:0; };
-function plantR(mw){ return Math.min(9, Math.max(1.3, Math.sqrt(mw)/11*Math.sqrt(pxDeg()/40))); }
-function chanceAt(lon,lat){
-  if (S.ds!=="now" || !raw("plocal")) return NaN;
-  return sample(still("plocal"),lon,lat);
-}
-function updateGridKey(force){
-  const sig=visibleClasses().length;
-  if (!force && sig===S.gridKeySig) return; S.gridKeySig=sig;
-  $("gridKey").innerHTML=LINE_CLASSES.map(c=>`<span style="opacity:${pxDeg()>=c.from?1:.4}" title="${pxDeg()>=c.from?"":"Zoom in to show"}"><i class="ln" style="border-color:${c.color}"></i>${c.label}</span>`).join("")
-    +["gas","coal","nuclear","solar","hydro"].map(k=>`<span><i class="dot" style="background:${FUEL[k][1]}"></i>${FUEL[k][0]}</span>`).join("")
-    +`<span><i class="dot" style="background:transparent;border:2px solid #ff4d6d"></i>≥${EXPOSED*100}% chance</span>`;
-  $("gridKey").hidden=!S.grid;
-}
-// the grid is drawn into its own canvas and reused while only the forecast time changes (playback)
-const gcv=document.createElement("canvas"), gctx=gcv.getContext("2d");
-let gridCacheKey="";
-function drawGrid(){
-  if (!S.grid || !GRID || S.z<=GRID_Z) return;
-  const vis=visibleClasses(); vis.forEach(c=>loadLines(c.k)); updateGridKey();
-  const hl=S.hl, key=[S.lam,S.phi,S.z,V.W,V.H,S.ds,hl?hl.k+hl.i:"",S.dragging,Object.keys(LINES).length,GRID.hitStamp].join("|");
-  if (key!==gridCacheKey){ gridCacheKey=key; renderGrid(vis, hl); }
-  ctx.drawImage(gcv,0,0);
-}
-function renderGrid(vis, hl){
-  const {W,H,dpr}=V, k=pxDeg(), g=gctx, m=40*dpr, scale=Math.max(0.6,Math.min(1.8,Math.sqrt(k/45)));
-  if (gcv.width!==W||gcv.height!==H){ gcv.width=W; gcv.height=H; }
-  g.clearRect(0,0,W,H); g.lineJoin="round"; g.lineCap="round";
-  const trace=(L,i)=>{ const a=L.lines[i]; let pen=false;
-    for (let j=2;j<a.length;j+=2){ const p=fwd(a[j],a[j+1]); if (!p){ pen=false; continue; } pen?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); pen=true; } };
-  // lowest voltage first so the big lines sit on top
-  for (const c of [...vis].reverse()){
-    const L=LINES[c.k]; if (!L) continue;
-    g.beginPath();
-    for (let i=0;i<L.lines.length;i++){
-      const p=fwd(L.cx[i],L.cy[i]), rp=L.rad[i]*k*dpr;
-      if (!p){ if (L.rad[i]<3) continue; }
-      else if (p[0]<-rp-m||p[0]>W+rp+m||p[1]<-rp-m||p[1]>H+rp+m) continue;
-      trace(L,i);
-    }
-    const dim=hl && hl.k!==c.k;
-    g.strokeStyle=dim?"rgba(150,160,170,.16)":c.color; g.globalAlpha=dim?1:(hl?1:.8);
-    g.lineWidth=c.w*dpr*scale*(hl&&!dim?1.25:1); g.stroke(); g.globalAlpha=1;
-  }
-  if (hl && LINES[hl.k]){  // the hovered line itself, with a soft glow
-    g.beginPath(); trace(LINES[hl.k],hl.i);
-    g.strokeStyle="rgba(255,255,255,.35)"; g.lineWidth=(LINE_CLASSES.find(c=>c.k===hl.k).w*scale+5)*dpr; g.stroke();
-    g.strokeStyle="#fff"; g.lineWidth=(LINE_CLASSES.find(c=>c.k===hl.k).w*scale+1)*dpr; g.stroke();
-  }
-  g.globalAlpha=hl?.35:1;
-  // substations once zoomed in further; skipped while dragging to keep rotation smooth
-  if (k>70 && !S.dragging){
-    const s=2.2*dpr; g.fillStyle="rgba(230,238,244,.85)"; g.strokeStyle="#ff4d6d"; g.lineWidth=1.4*dpr;
-    GRID.substations.forEach((b,i)=>{ const p=fwd(b[0],b[1]); if (!p||p[0]<-m||p[0]>W+m||p[1]<-m||p[1]>H+m) return; g.fillRect(p[0]-s/2,p[1]-s/2,s,s);
-      if (GRID.subHit&&GRID.subHit[i]) g.strokeRect(p[0]-s,p[1]-s,2*s,2*s); });
-  }
-  const minMw=minPlantMw();
-  for (let i=0;i<GRID.plants.length;i++){
-    const pl=GRID.plants[i]; if (pl[2]<minMw) break;  // plants are sorted by capacity, largest first
-    const p=fwd(pl[0],pl[1]); if (!p) continue; const r=plantR(pl[2])*dpr;
-    g.beginPath(); g.arc(p[0],p[1],r,0,2*Math.PI); g.fillStyle=FUEL[GRID.fuelKeys[pl[3]]][1]; g.fill();
-    g.lineWidth=0.8*dpr; g.strokeStyle="rgba(5,14,22,.9)"; g.stroke();
-    if (GRID.plantHit&&GRID.plantHit[i]){ g.beginPath(); g.arc(p[0],p[1],r+2.2*dpr,0,2*Math.PI); g.lineWidth=1.6*dpr; g.strokeStyle="#ff4d6d"; g.stroke(); }
-  }
-  g.fillStyle="#7bdff2"; g.strokeStyle="rgba(5,14,22,.9)"; g.lineWidth=0.8*dpr;
-  if (k>35) for (const d of GRID.datacenters){ const p=fwd(d[0],d[1]); if (!p) continue; const s=3.4*dpr;
-    g.beginPath(); g.moveTo(p[0],p[1]-s); g.lineTo(p[0]+s,p[1]); g.lineTo(p[0],p[1]+s); g.lineTo(p[0]-s,p[1]); g.closePath(); g.fill(); g.stroke(); }
-  g.globalAlpha=1;
-}
-function nearestAsset(x,y){
-  let best=null, bd=(8*V.dpr)**2;
-  const test=(kind,a,r)=>{ const p=fwd(a[0],a[1]); if (!p) return; const d=(p[0]-x)**2+(p[1]-y)**2; if (d<Math.max(bd,(r||0)**2) && d<(best?best.d:Infinity)){ best={kind,a,d}; } };
-  const minMw=minPlantMw();
-  for (const pl of GRID.plants){ if (pl[2]<minMw) break; test("plant",pl,plantR(pl[2])*V.dpr+2*V.dpr); }
-  if (pxDeg()>35) for (const d of GRID.datacenters) test("dc",d);
-  if (pxDeg()>70) for (const b of GRID.substations) test("sub",b);
-  return best;
-}
-// the visible line closest to the pointer, within 6 css px, found through the cell index
-function lineAt(x,y){
-  const ll=inv(x,y); if (!ll) return null;
-  const tol=6*V.dpr, tlat=tol/(pxDeg()*V.dpr), tlon=tlat/Math.max(0.2,Math.cos(ll[1]*RAD));
-  let best=null, bd=tol*tol;
-  for (const c of visibleClasses()){
-    const L=LINES[c.k]; if (!L) continue; const seen=new Set();
-    for (let gx=Math.floor((ll[0]-tlon)/CELL); gx<=Math.floor((ll[0]+tlon)/CELL); gx++)
-      for (let gy=Math.floor((ll[1]-tlat)/CELL); gy<=Math.floor((ll[1]+tlat)/CELL); gy++)
-        for (const i of L.idx.get(gx*4096+gy)||[]){
-          if (seen.has(i)) continue; seen.add(i);
-          const a=L.lines[i]; let q=fwd(a[2],a[3]);
-          for (let j=4;j<a.length;j+=2){
-            const p=fwd(a[j],a[j+1]);
-            if (p&&q){ const dx=p[0]-q[0], dy=p[1]-q[1], t=Math.max(0,Math.min(1,((x-q[0])*dx+(y-q[1])*dy)/(dx*dx+dy*dy||1)));
-              const d=(q[0]+t*dx-x)**2+(q[1]+t*dy-y)**2; if (d<bd){ bd=d; best={k:c.k,i}; } }
-            q=p;
-          }
-        }
-  }
-  return best;
-}
-function lineText({k,i}){
-  const L=LINES[k], a=L.lines[i], c=LINE_CLASSES.find(c=>c.k===k), op=L.ops[a[1]];
-  return `<b>${a[0]} kV power line</b>${op?` · ${op}`:""}<br>Highlighting all ${c.label} lines (${L.lines.length.toLocaleString("en-US")} in the 7 states)`;
-}
-function chanceText(lon,lat){
-  const c=chanceAt(lon,lat); if (c!==c) return "";
-  const b=sample(still("base"),lon,lat);
-  return `<br>Locally extreme rain, next 5 days: <b>${Math.round(c*100)}%</b> (usually ${(b*100).toFixed(1)}%)`;
-}
-function assetText({kind,a}){
-  if (kind==="plant"){ const f=FUEL[GRID.fuelKeys[a[3]]][0];
-    return `<b>${a[4]}</b> (${a[5]})<br>Power plant · ${a[2].toLocaleString("en-US")} MW · ${f}${chanceText(a[0],a[1])}`; }
-  if (kind==="dc") return `<b>${a[2]||"Data centre"}</b>${a[3]?` · ${a[3]}`:""}<br>Data centre (OpenStreetMap)${chanceText(a[0],a[1])}`;
-  return `<b>${a[3]||"Substation"}</b>${a[4]?` · ${a[4]}`:""}<br>Substation${a[2]?` · ${a[2]} kV`:""}${chanceText(a[0],a[1])}`;
-}
-function updateExposure(){
-  if (!GRID) return;
-  const el=$("gridSummary");
-  GRID.plantHit=GRID.subHit=null; GRID.hitStamp=(GRID.hitStamp||0)+1; S.dirty=true;
-  if (S.ds!=="now" || !raw("plocal")){ el.innerHTML=`<p>Exposure is computed from the 5-day forecast.</p>`; if (S.ds==="now" && S.meta?.layers.plocal) loadLayer("plocal").then(updateExposure).catch(()=>{}); return; }
-  const pc=GRID.plants.map(p=>chanceAt(p[0],p[1]));
-  GRID.plantHit=Uint8Array.from(pc,c=>c>=EXPOSED); GRID.subHit=Uint8Array.from(GRID.substations,b=>chanceAt(b[0],b[1])>=EXPOSED);
-  const hitP=GRID.plants.map((p,i)=>({p,c:pc[i]})).filter(o=>o.c>=EXPOSED);
-  const subs=GRID.subHit.reduce((s,v)=>s+v,0), dcs=GRID.datacenters.filter(d=>chanceAt(d[0],d[1])>=EXPOSED).length;
-  const gw=a=>(a.reduce((s,p)=>s+p[2],0)/1000).toFixed(1);
-  const top=[...hitP].sort((a,b)=>b.c*Math.sqrt(b.p[2])-a.c*Math.sqrt(a.p[2])).slice(0,4);
-  el.innerHTML=`<ul>
-      <li><span><b>${subs.toLocaleString("en-US")}</b> of ${GRID.substations.length.toLocaleString("en-US")} transmission substations</span></li>
-      <li><span><b>${hitP.length}</b> of ${GRID.plants.length} power plants · <b>${gw(hitP.map(o=>o.p))} GW</b> of ${gw(GRID.plants)} GW</span></li>
-      <li><span><b>${dcs}</b> of ${GRID.datacenters.length} mapped data centres</span></li></ul>`
-    +(top.length?`<ol>${top.map(o=>`<li>${o.p[4]} (${o.p[5]}) · ${o.p[2].toLocaleString("en-US")} MW ${FUEL[GRID.fuelKeys[o.p[3]]][0].toLowerCase()} · ${Math.round(o.c*100)}%</li>`).join("")}</ol>`
-                :`<p>No plant has a ${EXPOSED*100}% or higher chance in this forecast.</p>`)
-    +`<p class="small">Assets with at least a ${EXPOSED*100}% chance of locally extreme 3-day rain (about 10× the usual chance). Hover an asset or line for details.</p>`;
 }
 
 /* ---------- moving lines ---------- */
@@ -765,10 +669,6 @@ function stepFlow(){
 /* ---------- controls ---------- */
 const fmtDay=d=>d.toLocaleString("en-US",{timeZone:"UTC",weekday:"short",day:"numeric",month:"short"});
 const fmtTime=i=>{ const d=new Date(S.meta.times[i]+"Z"), hh=String(d.getUTCHours()).padStart(2,"0");
-  if (S.ds==="now"){
-    if (LAYERS[S.layer].still) return `Next 5 days <span>· whole period; lines show day ${i+1}</span>`;
-    return `Day ${i+1}: 24 h to ${fmtDay(d)} <span>· ${hh}:00 UTC</span>`;
-  }
   return `${fmtDay(d)} <span>· ${hh}:00 UTC</span>`; };
 function setTime(t, fromSlider){
   S.t=Math.max(0,Math.min(NT()-1,t)); if (!fromSlider) $("time").value=S.t;
@@ -789,6 +689,14 @@ function drawLegend(){
   $("lgName").textContent=L.unit?`${L.name}, ${L.unit}`:L.name;
   const [v0,v1]=L.range; $("lgTicks").innerHTML=[0,.25,.5,.75,1].map(f=>{ const v=v0+f*(v1-v0); return `<span>${L.pct?Math.round(v*100)+"%":Math.round(v).toLocaleString("en-US")}</span>`; }).join("");
 }
+function fitSE(){
+  // css px per degree that fits SE.w x SE.h into the globe's area, then the zoom that gives it
+  const hero=$("top").getBoundingClientRect(), mobile=hero.width<=760;
+  const w=mobile?hero.width-32:hero.width-($("heroInner").getBoundingClientRect().right-hero.left)-72;
+  const h=mobile?$("spacer").getBoundingClientRect().height:Math.min(hero.height,innerHeight)-140;
+  const k=Math.min(w/(SE.w*Math.cos(SE.phi*RAD)), h/SE.h);
+  return Math.max(1, k*V.dpr/RAD/V.R0);
+}
 function flyTo(lam,phi,z,then){
   let tl=lam; while (tl-S.lam>180) tl-=360; while (tl-S.lam<-180) tl+=360;
   S.auto=false;
@@ -798,33 +706,21 @@ const ZMAX=60;  // about 0.1 degree across a typical screen
 function zoomBy(f){ S.z=Math.max(0.7,Math.min(ZMAX,S.z*f)); S.auto=false; S.dirty=true; tctx.clearRect(0,0,V.W,V.H); loadDetail(); }
 function updateReadout(){
   const el=$("readout");
-  const setHl=h=>{ if ((h?h.k+h.i:"")!==(S.hl?S.hl.k+S.hl.i:"")){ S.hl=h; S.dirty=true; } };
-  if (!S.hover){ el.hidden=true; setHl(null); return; }
+  if (!S.hover){ el.hidden=true; return; }
   const ll=inv(S.hover.x*V.dpr,S.hover.y*V.dpr);
-  if (!ll){ el.hidden=true; setHl(null); return; }
+  if (!ll){ el.hidden=true; return; }
   let lon=((ll[0]+180)%360+360)%360-180, lat=ll[1];
   const loc=`${Math.abs(lat).toFixed(1)}°${lat>=0?"N":"S"}, ${Math.abs(lon).toFixed(1)}°${lon<0?"W":"E"}`;
   let txt=loc;
-  const onGrid=S.grid&&GRID&&S.z>GRID_Z, hx=S.hover.x*V.dpr, hy=S.hover.y*V.dpr;
-  const asset=onGrid&&nearestAsset(hx,hy), line=onGrid&&!asset&&lineAt(hx,hy);
-  setHl(line||null);
-  if (asset||line){ el.innerHTML=asset?assetText(asset):lineText(line); el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false; return; }
   if (ensureField()){
     const v=sample(FIELD,lon,lat), L=LAYERS[S.layer];
     if (v===v){ const val=L.pct?`${Math.round(v*100)}% chance`:`${v>=100?Math.round(v).toLocaleString("en-US"):v.toFixed(1)} ${L.unit}${L.inches?` (${(v/25.4).toFixed(1)} in)`:""}`;
-      let extra="";
-      if (L.local){
-        const q=sample(still("q99"),lon,lat), b=sample(still("base"),lon,lat), r=v/Math.max(b,1/930);
-        extra=`<br>Usually ${b<0.0095?(b*100).toFixed(1):Math.round(b*100)}%${v>=0.05&&r>=1.5?` · <b>${r>=10?Math.round(r):r.toFixed(1)}× the usual chance</b>`:""}`
-             +`<br>Local 1-in-100: ${Math.round(q)} mm in 3 days (${(q/25.4).toFixed(1)} in)`;
-      }
-      txt=`<b>${L.label}</b> ${val}${extra}<br>${loc}`; }
+      txt=`<b>${L.label}</b> ${val}<br>${loc}`; }
   }
   el.innerHTML=txt; el.style.left=S.hover.x+"px"; el.style.top=S.hover.y+"px"; el.hidden=false;
 }
 let detailLoading=false;
 async function loadDetail(){
-  if (S.z>=GRID_Z) loadGrid();
   if (detailLoading || S.z<1.4) return; detailLoading=true;
   try {
     const [land, us]=await Promise.all([fetch(GEO_CDN+"world-atlas@2.0.2/land-50m.json").then(r=>r.json()), fetch(GEO_CDN+"us-atlas@3.0.1/states-10m.json").then(r=>r.json())]);
@@ -899,32 +795,41 @@ async function setDataset(key){
   if (!S.metas[key]){ const r=await fetch(DS.dir+"meta.json",{cache:"no-cache"}); if (!r.ok) throw new Error(key); S.metas[key]=await r.json(); }
   if (S.ds!==key) return;  // another switch happened while loading
   S.meta=S.metas[key];
-  // only offer layers this run actually has (the locally extreme layer needs data/climate/)
+  // only offer layers this dataset actually has
   LAYERS=Object.fromEntries(Object.entries(DS.layers).filter(([,L])=>L.needs.every(n=>S.meta.layers[n])));
-  if (DS.calibratedLayer && S.meta.climate?.calibrated) S.layer=DS.calibratedLayer;
   if (!LAYERS[S.layer]) S.layer=Object.keys(LAYERS)[0];
   $("layers").innerHTML=""; $("layers").className="seg"+(Object.keys(LAYERS).length===4?" four":"");
   for (const [k,L] of Object.entries(LAYERS)){
     const b=document.createElement("button"); b.type="button"; b.textContent=L.label; b.dataset.k=k; b.onclick=()=>setLayer(k); $("layers").appendChild(b);
   }
   const g=S.meta.grid||{nlat:181,nlon:360,d:1};
-  if (g.nlat!==NLAT||g.nlon!==NLON){ NLAT=g.nlat; NLON=g.nlon; NCELL=NLAT*NLON; FIELD=new Float32Array(NCELL); U=new Float32Array(NCELL); Vv=new Float32Array(NCELL); }
+  if (g.nlat!==NLAT||g.nlon!==NLON){ NLAT=g.nlat; NLON=g.nlon; NCELL=NLAT*NLON; FIELD=new Float32Array(NCELL); TMP=new Float32Array(NCELL); U=new Float32Array(NCELL); Vv=new Float32Array(NCELL); }
   GD=g.d; S.fieldKey=""; S.flowKey=""; parts=[]; tctx.clearRect(0,0,V.W,V.H);
-  const c=S.meta.climate;
-  $("dsInfo").textContent=key==="now"
-    ? `ECMWF ensemble, ${S.meta.members} members, run ${fmtDay(new Date(S.meta.run+"Z"))} ${S.meta.run.slice(11,13)} UTC. Chances are the share of members over the threshold.`
-      +(c?` Locally extreme: above the ERA5 ${c.years[0]}–${c.years[1]} 99th percentile of 3-day rain for that place and time of year`
-        +(c.calibrated?`, matched to the same percentile of ${c.modelRuns} past ECMWF forecasts for this season so the model's own rain bias cancels out.`
-                      :`. In the tropics the forecast model rains harder than ERA5, so chances there read high.`):"")
+  const t=S.meta.times, last=new Date(t[t.length-1]+"Z");
+  $("dsInfo").textContent=key==="recent"
+    ? `NOAA GFS analyses every 6 hours, ${fmtDay(new Date(t[0]+"Z"))} to ${fmtDay(last)} ${t[t.length-1].slice(11,13)} UTC. Rain is the model's estimate for each 6 hours, not a gauge or radar measurement.`
     : "ERA5 reanalysis, every 6 hours, 23–29 September 2024.";
   $("time").max=NT()-1;
-  const start=DS.start?S.meta.times.indexOf(DS.start):0; setTime(start>=0?start:0);
+  const start=DS.start?S.meta.times.indexOf(DS.start):NT()-1; setTime(start>=0?start:0);  // the recent data opens on its newest time
   await setLayer(S.layer);
   await Promise.all(S.flow?DS.flow.map(loadLayer):[]).catch(()=>{});
   S.dirty=true;
   Object.values(LAYERS).flatMap(L=>L.needs).forEach(n=>loadLayer(n).catch(()=>{}));  // the rest in the background
-  updateExposure();
 }
+
+/* ---------- writing and LinkedIn sections ---------- */
+Writing.load().then(items=>{ $("writingMag").innerHTML=Writing.magazine(items); })
+  .catch(()=>{ $("writingMag").innerHTML=`<p class="w-empty">Writing could not be loaded.</p>`; });
+
+// LinkedIn post IDs carry their creation time: the top 41 bits are milliseconds since 1970
+const liDate=urn=>{ const id=urn.match(/(\d{15,})/); return id?new Date(Number(BigInt(id[1])>>22n)):null; };
+fetch("data/linkedin.json",{cache:"no-cache"}).then(r=>r.json()).then(li=>{
+  if (li.profile) $("liFollow").href=li.profile;
+  const posts=[...li.posts].sort((a,b)=>(liDate(b.urn)||0)-(liDate(a.urn)||0));
+  $("liFeed").innerHTML=posts.map(p=>{ const d=liDate(p.urn);
+    return `<article class="li-post"><iframe src="https://www.linkedin.com/embed/feed/update/${encodeURIComponent(p.urn)}" height="${p.height||640}" loading="lazy" title="LinkedIn post${d?`, ${d.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}`:""}" allowfullscreen></iframe></article>`; }).join("")
+    +`<div class="li-more"><a href="${Writing.esc((li.profile||"https://www.linkedin.com/in/hatamimatt/").replace(/\/?$/,"/")+"recent-activity/all/")}" target="_blank" rel="noopener">See all posts on LinkedIn ↗</a></div>`;
+}).catch(()=>{ $("liFeed").innerHTML=`<div class="li-more"><a href="https://www.linkedin.com/in/hatamimatt/recent-activity/all/" target="_blank" rel="noopener">See my posts on LinkedIn ↗</a></div>`; });
 
 (async function init(){
   for (const [k,D] of Object.entries(DATASETS)){
@@ -933,11 +838,9 @@ async function setDataset(key){
   }
   $("flow").checked=S.flow;
   $("flow").onchange=e=>{ S.flow=e.target.checked; if (S.flow && S.meta) Promise.all(DS.flow.map(loadLayer)).catch(()=>{}); };
-  $("grid").checked=S.grid;
-  $("grid").onchange=e=>{ S.grid=e.target.checked; $("gridKey").hidden=!S.grid; S.hl=null; if (S.grid) loadGrid(); S.dirty=true; };
   $("play").onclick=()=>S.playing?pause():play();
   $("time").addEventListener("input",e=>{ pause(); setTime(+e.target.value,true); });
-  const goSE=()=>flyTo(SE.lam,SE.phi,innerWidth<=760?1.7:SE.z);
+  const goSE=()=>flyTo(SE.lam,SE.phi,fitSE());
   $("goSE").onclick=goSE; $("ctaFly").onclick=goSE;
   $("goGlobe").onclick=()=>flyTo(S.lam,18,1,()=>{ S.auto=!reduceMotion; });
   $("zoomIn").onclick=()=>zoomBy(1.4); $("zoomOut").onclick=()=>zoomBy(1/1.4);
@@ -952,11 +855,11 @@ async function setDataset(key){
     S.dirty=true;
   } catch(e){}
 
-  // open on the live outlook; fall back to Helene if data/now has not been built
-  try { await setDataset("now"); $("status").remove(); }
+  // open on the past five days; fall back to Helene if data/recent has not been built
+  try { await setDataset("recent"); $("status").remove(); }
   catch(e){
     try { await setDataset("helene"); $("status").remove(); }
-    catch(e2){ $("status").textContent="Globe data not found. Run prepare_now.py or prepare_globe.py."; }
+    catch(e2){ $("status").textContent="Globe data not found. Run prepare_recent.py or prepare_globe.py."; }
   }
 })();
 </script>

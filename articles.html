@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Field Notes · Matt Hatami</title>
+<meta name="description" content="Notes and interactive pieces by Matt Hatami on extreme rainfall, hydroclimate risk, and the data and tools behind them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/writing.css">
+<script src="assets/writing.js"></script>
+<style>
+:root{
+  --paper:#F7F8F9; --ink:#14181B; --muted:#5A6670; --line:#D5DBDF; --accent:#1B6A88;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --paper:#0E1A23; --ink:#E1E8EC; --muted:#93A4AE; --line:#263A4A; --accent:#5FB6D4; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --paper:#0E1A23; --ink:#E1E8EC; --muted:#93A4AE; --line:#263A4A; --accent:#5FB6D4; color-scheme:dark; }
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font-size:.92rem}
+.top a{text-decoration:none;color:var(--muted)}
+.top a:hover{color:var(--ink)}
+.top .brand{font:600 1.1rem var(--serif);color:var(--ink)}
+main{padding:28px 0 0}
+.rest{margin-top:48px}
+footer{margin:72px 0 0;padding:22px 0 44px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+@media (max-width:760px){ .wrap{padding:0 16px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" aria-label="Site">
+    <a class="brand" href="index.html">Matt Hatami</a>
+    <a href="index.html#writing">← Home</a>
+  </nav>
+  <main>
+    <header class="w-head">
+      <h2>Field notes.</h2>
+      <p>Notes and interactive pieces on extreme rainfall, hydroclimate risk, and the data and tools behind them.</p>
+    </header>
+    <div id="mag"><p class="w-empty">Loading…</p></div>
+    <div class="rest" id="rest"></div>
+  </main>
+  <footer>© 2026 Matt Hatami</footer>
+</div>
+<script>
+Writing.load().then(items=>{
+  document.getElementById("mag").innerHTML=Writing.magazine(items.slice(0,5));
+  document.getElementById("rest").innerHTML=Writing.list(items.slice(5));
+}).catch(()=>{ document.getElementById("mag").innerHTML=`<p class="w-empty">Writing could not be loaded.</p>`; });
+</script>
+</body>
+</html>

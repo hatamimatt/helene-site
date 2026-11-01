@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "before-helene",
+    "title": "Before Helene: What Was Already Unusual",
+    "dek": "Which ingredients for Hurricane Helene's flooding stood out against 34 years of ERA5 in the weeks before landfall, and what the forecasts said in the days before it.",
+    "date": "2026-10-28",
+    "kind": "Interactive",
+    "tags": ["Hurricanes", "Forecast verification"],
+    "image": "assets/articles/before-helene.jpg",
+    "url": "before_helene.html"
+  },
+  {
+    "slug": "helene-replay",
+    "title": "Hurricane Helene, Hour by Hour",
+    "dek": "Step through the winds, moisture and rain that turned Helene into a catastrophic inland flood across the southern Appalachians.",
+    "date": "2026-10-27",
+    "kind": "Interactive",
+    "tags": ["Hurricanes", "Extreme rainfall"],
+    "image": "assets/articles/helene-replay.jpg",
+    "url": "helene_viewer.html"
+  }
+]
